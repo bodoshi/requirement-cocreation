@@ -1,0 +1,9 @@
+{
+  "name": "requirement-cocreation",
+  "version": "1.0.0",
+  "description": "需求共创 - 交互式需求分析工具",
+  "private": true,
+  "scripts": {
+    "proxy": "node rc-server.js"
+  }
+}
