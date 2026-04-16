@@ -1,0 +1,2406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>/需求共创 - 交互式工作流</title>
+<style>
+:root {
+  --primary: #4f46e5;
+  --primary-light: #818cf8;
+  --primary-bg: #eef2ff;
+  --success: #059669;
+  --success-bg: #ecfdf5;
+  --warning: #d97706;
+  --warning-bg: #fffbeb;
+  --danger: #dc2626;
+  --danger-bg: #fef2f2;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Top Bar ===== */
+.topbar {
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gray-900);
+}
+
+.topbar-badge {
+  font-size: 12px;
+  background: var(--primary-bg);
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--gray-300);
+  background: white;
+  color: var(--gray-700);
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+
+.btn:hover { background: var(--gray-50); border-color: var(--gray-400); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+.btn-primary:hover { background: #4338ca; }
+.btn-primary:disabled { background: var(--primary); }
+
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+
+.btn-icon {
+  padding: 8px;
+  border: none;
+  background: transparent;
+  color: var(--gray-500);
+  cursor: pointer;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+}
+.btn-icon:hover { background: var(--gray-100); color: var(--gray-700); }
+
+/* ===== Progress Bar ===== */
+.progress-bar {
+  background: white;
+  border-bottom: 1px solid var(--gray-200);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.phase-step {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.phase-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  border: 2px solid var(--gray-300);
+  background: white;
+  color: var(--gray-400);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.phase-dot.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: white;
+}
+
+.phase-dot.completed {
+  border-color: var(--success);
+  background: var(--success);
+  color: white;
+}
+
+.phase-dot:hover:not(.active) { border-color: var(--primary-light); }
+
+.phase-label {
+  font-size: 12px;
+  color: var(--gray-500);
+  margin-left: 8px;
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.phase-step.active .phase-label { color: var(--primary); font-weight: 600; }
+.phase-step.completed .phase-label { color: var(--success); }
+
+.phase-connector {
+  width: 40px;
+  height: 2px;
+  background: var(--gray-200);
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+.phase-connector.completed { background: var(--success); }
+
+/* ===== Main Content ===== */
+.main-content {
+  flex: 1;
+  display: flex;
+  padding: 0;
+  overflow: hidden;
+  height: calc(100vh - 130px - 56px);
+}
+
+.left-panel {
+  flex: 6;
+  overflow-y: auto;
+  padding: 24px;
+  border-right: 1px solid var(--gray-200);
+  background: white;
+}
+
+.right-panel {
+  flex: 4;
+  overflow-y: auto;
+  padding: 24px;
+  background: var(--gray-50);
+}
+
+/* ===== Bottom Navigation ===== */
+.bottom-nav {
+  background: white;
+  border-top: 1px solid var(--gray-200);
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  bottom: 0;
+}
+
+.bottom-nav-center {
+  font-size: 13px;
+  color: var(--gray-500);
+}
+
+/* ===== Phase Content Styles ===== */
+.phase-content { display: none; }
+.phase-content.active { display: block; }
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--gray-900);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-subtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin: 16px 0 8px;
+}
+
+.section-desc {
+  font-size: 13px;
+  color: var(--gray-500);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+
+/* ===== Cards ===== */
+.card {
+  background: white;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.card-header {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ===== Form Elements ===== */
+textarea, input[type="text"], input[type="password"], select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--gray-800);
+  background: white;
+  transition: border-color 0.15s;
+  resize: vertical;
+}
+
+textarea:focus, input[type="text"]:focus, input[type="password"]:focus, select:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--gray-700);
+  margin-bottom: 6px;
+}
+
+.form-group { margin-bottom: 16px; }
+.form-hint { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
+
+/* ===== Tags / Badges ===== */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  gap: 4px;
+}
+
+.tag-red { background: var(--danger-bg); color: var(--danger); }
+.tag-yellow { background: var(--warning-bg); color: var(--warning); }
+.tag-green { background: var(--success-bg); color: var(--success); }
+.tag-blue { background: var(--primary-bg); color: var(--primary); }
+
+/* ===== Checklist Items ===== */
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.checklist-item:hover { background: var(--gray-50); }
+.checklist-item.checked { background: var(--success-bg); border-color: #a7f3d0; }
+
+.checklist-item input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.checklist-label { font-size: 14px; line-height: 1.5; }
+
+/* ===== OKR Cards ===== */
+.okr-card {
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.okr-card:hover { border-color: var(--primary-light); background: var(--primary-bg); }
+.okr-card.selected { border-color: var(--primary); background: var(--primary-bg); box-shadow: 0 0 0 2px rgba(79,70,229,0.2); }
+
+.okr-objective {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gray-800);
+  margin-bottom: 4px;
+}
+
+.okr-kr {
+  font-size: 13px;
+  color: var(--gray-600);
+  padding-left: 16px;
+  margin-top: 4px;
+}
+
+.okr-kr::before { content: '└ '; color: var(--gray-400); }
+
+/* ===== AI Response Area ===== */
+.ai-response {
+  background: var(--primary-bg);
+  border: 1px solid #c7d2fe;
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.ai-response-header {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-thinking {
+  background: var(--gray-100);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 16px;
+  text-align: center;
+  color: var(--gray-500);
+  font-size: 14px;
+}
+
+.ai-thinking .spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--gray-300);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== Reference Panel ===== */
+.ref-section {
+  margin-bottom: 20px;
+}
+
+.ref-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.ref-item {
+  font-size: 13px;
+  color: var(--gray-600);
+  padding: 6px 0;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--gray-100);
+}
+
+.ref-item:last-child { border-bottom: none; }
+
+.ref-highlight {
+  background: #fef3c7;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+/* ===== Modal ===== */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 16px;
+  color: var(--gray-900);
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+/* ===== Relevance Dots ===== */
+.relevance-high::before { content: '🔴'; margin-right: 4px; }
+.relevance-mid::before { content: '🟡'; margin-right: 4px; }
+.relevance-low::before { content: '🟢'; margin-right: 4px; }
+
+/* ===== Markdown-like output ===== */
+.output-block {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius);
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--gray-600);
+}
+.copy-btn:hover { background: var(--gray-100); }
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .main-content { flex-direction: column; height: auto; }
+  .left-panel { border-right: none; border-bottom: 1px solid var(--gray-200); }
+  .right-panel { flex: none; }
+  .phase-label { display: none; }
+}
+
+/* ===== Scrollbar ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gray-400); }
+
+/* ===== Toast ===== */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--gray-800);
+  color: white;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  opacity: 0;
+  transition: all 0.3s;
+  z-index: 300;
+  pointer-events: none;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ===== Top Bar ===== -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span class="topbar-title">/需求共创</span>
+    <span class="topbar-badge">交互式工作流</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-sm" onclick="showApiKeyModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+      API Key
+    </button>
+    <button class="btn btn-sm" onclick="exportResults()" id="btn-export" disabled>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      导出结果
+    </button>
+    <button class="btn btn-sm btn-primary" onclick="resetWorkflow()">
+      重新开始
+    </button>
+  </div>
+</div>
+
+<!-- ===== Progress Bar ===== -->
+<div class="progress-bar" id="progress-bar">
+  <!-- Rendered by JS -->
+</div>
+
+<!-- ===== Main Content ===== -->
+<div class="main-content">
+  <div class="left-panel" id="left-panel">
+    <!-- Phase 0: 需求决策验证 -->
+    <div class="phase-content" id="phase-0-content">
+      <div class="section-title">Phase 0：需求决策验证</div>
+      <div class="section-desc">在检查 PRD 细节之前，先验证"这个需求该不该做、方向对不对"。</div>
+
+      <!-- Step 0-1: PRD Input -->
+      <div id="p0-step-input">
+        <div class="card">
+          <div class="card-header">📄 输入 PRD 内容</div>
+          <div class="form-group">
+            <label>粘贴 PRD 全文（从飞书文档复制）</label>
+            <textarea id="prd-input" rows="12" placeholder="将 PRD 文档内容粘贴到这里...&#10;&#10;支持纯文本格式，建议包含完整的 §1 背景、§2 需求细节、§3 Checklist、§4 必备事项等章节。"></textarea>
+            <div class="form-hint">提示：可从飞书文档中全选复制，粘贴到此处</div>
+          </div>
+          <button class="btn btn-primary" onclick="startPhase0()" id="btn-start-p0">
+            开始分析 →
+          </button>
+        </div>
+      </div>
+
+      <!-- Step 0-2: AI Analysis + OKR -->
+      <div id="p0-step-okr" style="display:none">
+        <div id="p0-ai-analysis"></div>
+
+        <div class="card">
+          <div class="card-header">📌 OKR 对齐</div>
+          <div class="section-desc">选择你的需求主要挂钩的业务目标（Objective）和关键结果（Key Result）：</div>
+          <div id="okr-list"></div>
+          <div class="form-group" style="margin-top:12px">
+            <label>本需求预期贡献（选填）</label>
+            <input type="text" id="okr-contribution" placeholder="例如：XX审核耗时从Y降至Z">
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 0-3: 三问法 -->
+      <div id="p0-step-3q" style="display:none">
+        <div class="card">
+          <div class="card-header">🔍 三问法验证</div>
+          <div id="p0-3q-ai-prefill"></div>
+          <div class="form-group">
+            <label>Q1 根目的：为什么做这件事？和哪个业务指标挂钩？</label>
+            <textarea id="q1-answer" rows="3" placeholder="AI 将基于 PRD 内容给出预填建议..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Q2 目标客群+问题：给谁用？解决什么问题？有数据支撑吗？</label>
+            <textarea id="q2-answer" rows="3" placeholder="AI 将基于 PRD 内容给出预填建议..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Q3 ROI：投入多少资源？预期回报是什么？值不值得做？</label>
+            <textarea id="q3-answer" rows="3" placeholder="AI 将基于 PRD 内容给出预填建议..."></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 0-4: 六不要 + 三看 -->
+      <div id="p0-step-health" style="display:none">
+        <div class="card">
+          <div class="card-header">⚠️ 决策健康度检查</div>
+          <div class="section-desc">六不要：识别常见决策陷阱</div>
+          <div id="p0-dont-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">👀 三看：决策视角补充</div>
+          <div id="p0-look-list"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">📋 需求分类</div>
+          <div id="p0-classification"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 1: 扫描识别 -->
+    <div class="phase-content" id="phase-1-content">
+      <div class="section-title">Phase 1：扫描与识别</div>
+      <div class="section-desc">AI 自动解析 PRD 内容，提取关键要素。</div>
+      <div id="p1-results">
+        <div class="ai-thinking"><span class="spinner"></span>正在扫描 PRD 内容...</div>
+      </div>
+    </div>
+
+    <!-- Phase 2: 知识匹配 -->
+    <div class="phase-content" id="phase-2-content">
+      <div class="section-title">Phase 2：知识匹配</div>
+      <div class="section-desc">将 PRD 内容与四大知识库交叉匹配，评估相关度。</div>
+      <div id="p2-results">
+        <div class="ai-thinking"><span class="spinner"></span>正在匹配知识库...</div>
+      </div>
+    </div>
+
+    <!-- Phase 3: 交叉检查 + Checklist -->
+    <div class="phase-content" id="phase-3-content">
+      <div class="section-title">Phase 3：交叉检查与确认</div>
+
+      <!-- 3a: Cross-reference -->
+      <div id="p3a-section">
+        <div class="section-subtitle">3a. 需求细节交叉检查</div>
+        <div class="section-desc">基于知识库规范，对 PRD 中的设计细节进行交叉比对。</div>
+        <div id="p3a-results">
+          <div class="ai-thinking"><span class="spinner"></span>正在进行交叉检查...</div>
+        </div>
+      </div>
+
+      <!-- 3a+: Cross-module -->
+      <div id="p3a-plus-section" style="margin-top:24px">
+        <div class="section-subtitle">3a+. 跨模块关联检查</div>
+        <div class="section-desc">扫描五种跨模块依赖模式（D1-D5）。</div>
+        <div id="p3a-plus-results"></div>
+      </div>
+
+      <!-- 3a: 文档质量标准 -->
+      <div id="p3a-quality-section" style="margin-top:24px">
+        <div class="section-subtitle">3a. 文档质量标准检查</div>
+        <div class="section-desc">七项需求文档质量标准（无歧义/完整/明确/结构清晰/逻辑流畅/避免冗余/可追踪）。</div>
+        <div id="p3a-quality-results"></div>
+      </div>
+
+      <!-- 3b: 业务域 Checklist -->
+      <div id="p3b-domain-section" style="margin-top:24px">
+        <div class="section-subtitle">3b. 业务域专属 Checklist</div>
+        <div class="section-desc">基于识别到的业务域，生成专属检查项。</div>
+        <div id="p3b-domain-list"></div>
+      </div>
+
+      <!-- 3b: AI Checklist (分层) -->
+      <div id="p3b-section" style="margin-top:24px">
+        <div class="section-subtitle">3b. AI 交叉检查 Checklist</div>
+        <div class="section-desc">按相关度分层确认 checklist 各项。</div>
+        <div id="p3b-high" style="margin-bottom:16px">
+          <div class="section-subtitle" style="color:var(--danger)">🔴 高相关项（逐项确认）</div>
+          <div id="p3b-high-list"></div>
+        </div>
+        <div id="p3b-mid" style="margin-bottom:16px">
+          <div class="section-subtitle" style="color:var(--warning)">🟡 可能相关项（请判断）</div>
+          <div id="p3b-mid-list"></div>
+        </div>
+        <div id="p3b-low">
+          <div class="section-subtitle" style="color:var(--success)">🟢 不相关项（已标记为不涉及）</div>
+          <div id="p3b-low-list"></div>
+        </div>
+      </div>
+
+      <!-- 3b: 关联事项 -->
+      <div id="p3b-related-section" style="margin-top:24px">
+        <div class="section-subtitle">3b. 关联事项完整性检查</div>
+        <div class="section-desc">9项关联事项逐一确认（上线待办/材料/名词/埋点/权限/消息/存量/灰度/验证）。</div>
+        <div id="p3b-related-list"></div>
+      </div>
+    </div>
+
+    <!-- Phase 4: 输出 -->
+    <div class="phase-content" id="phase-4-content">
+      <div class="section-title">Phase 4：输出结果</div>
+      <div class="section-desc">生成可粘贴到 PRD 的内容，汇总所有确认结论。</div>
+
+      <div id="p4-output">
+        <div class="card">
+          <div class="card-header">📋 OKR 挂靠</div>
+          <div class="output-block" id="p4-okr-output">
+            <button class="copy-btn" onclick="copyBlock('p4-okr-output')">复制</button>
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">✅ Phase 0 决策验证结论</div>
+          <div class="output-block" id="p4-decision-output">
+            <button class="copy-btn" onclick="copyBlock('p4-decision-output')">复制</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">📝 改进建议清单</div>
+          <div class="output-block" id="p4-suggestions-output">
+            <button class="copy-btn" onclick="copyBlock('p4-suggestions-output')">复制</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">📋 Checklist 填写结果</div>
+          <div class="output-block" id="p4-checklist-output">
+            <button class="copy-btn" onclick="copyBlock('p4-checklist-output')">复制</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">👥 读者提醒</div>
+          <div class="output-block" id="p4-readers-output">
+            <button class="copy-btn" onclick="copyBlock('p4-readers-output')">复制</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">💡 后续建议</div>
+          <div class="ai-response" id="p4-next-steps">
+            建议跑 <strong>/PRD内审</strong> 做完整 11 维度系统性审查。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Right Panel ===== -->
+  <div class="right-panel" id="right-panel">
+    <!-- Phase 0 reference -->
+    <div class="phase-content" id="phase-0-ref">
+      <div class="ref-section">
+        <div class="ref-title">📚 方法论参考</div>
+        <div class="ref-item"><strong>三问法</strong>：Q1 根目的 → Q2 客群+问题 → Q3 ROI</div>
+        <div class="ref-item"><strong>六不要</strong>：感觉不错就做 / 看到别人做就跟 / 想做就做 / 被动接需求 / 想当然 / 不看数据</div>
+        <div class="ref-item"><strong>三看</strong>：看宏观（行业趋势）/ 看竞争（同类方案）/ 看用户（用户研究）</div>
+        <div class="ref-item"><strong>需求分类</strong>：简单（单一问题→单一方案）/ 常规（单一问题→多方案）/ 复杂（宽泛问题→需拆解）</div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">📌 OKR 数据</div>
+        <div id="ref-okr-display"></div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">💡 四种驱动类型变体</div>
+        <div class="ref-item"><strong>用户反馈驱动</strong>：反馈背后的真实问题 / 反馈用户代表性 / 修复成本vs影响</div>
+        <div class="ref-item"><strong>业务项目驱动</strong>：项目业务目标 / 服务客群 / 资源vs价值</div>
+        <div class="ref-item"><strong>老板需求驱动</strong>：期望达成指标 / 判断依据是否验证 / 替代方案</div>
+        <div class="ref-item"><strong>数据分析驱动</strong>：数据核心问题 / 影响范围频次 / 提升预期</div>
+      </div>
+    </div>
+
+    <!-- Phase 1 reference -->
+    <div class="phase-content" id="phase-1-ref">
+      <div class="ref-section">
+        <div class="ref-title">🔍 扫描识别要素</div>
+        <div class="ref-item">业务域识别（开户/资金/合规/账户管理）</div>
+        <div class="ref-item">适用市场识别（HK/JP/SG/MY/AU/CA/US）</div>
+        <div class="ref-item">核心实体提取</div>
+        <div class="ref-item">涉及流程/设计组件提取</div>
+        <div class="ref-item">模板各节填写状态检测</div>
+      </div>
+    </div>
+
+    <!-- Phase 2 reference -->
+    <div class="phase-content" id="phase-2-ref">
+      <div class="ref-section">
+        <div class="ref-title">📚 四大知识库</div>
+        <div class="ref-item"><strong>① 需求框架库</strong>：PRD 结构、checklist、审查框架</div>
+        <div class="ref-item"><strong>② 细节规范库</strong>：交互模式、字段规范、组件规范</div>
+        <div class="ref-item"><strong>③ 业务规则库</strong>：监管规则、合规参数</div>
+        <div class="ref-item"><strong>④ 系统实现库</strong>：模块架构、系统依赖</div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">🏷️ 相关度标签</div>
+        <div class="ref-item">🔴 高相关 — 逐项引导确认</div>
+        <div class="ref-item">🟡 可能相关 — 简要提醒</div>
+        <div class="ref-item">🟢 不相关 — 批量标记"不涉及"</div>
+      </div>
+    </div>
+
+    <!-- Phase 3 reference -->
+    <div class="phase-content" id="phase-3-ref">
+      <div class="ref-section">
+        <div class="ref-title">🔗 跨模块依赖模式</div>
+        <div class="ref-item"><strong>D1 共享数据实体</strong>：共用实体变更需同步所有消费方</div>
+        <div class="ref-item"><strong>D2 上下游联动</strong>：输出=下游输入，变更需适配</div>
+        <div class="ref-item"><strong>D3 状态一致性</strong>：多系统状态需保持一致或定义优先级</div>
+        <div class="ref-item"><strong>D4 供应商共享</strong>：多系统依赖同一外部数据源</div>
+        <div class="ref-item"><strong>D5 边界模糊</strong>：功能归属不清导致重复/缺失</div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">📋 权威性标注</div>
+        <div class="ref-item"><span class="tag tag-blue">AI建议</span> 基于分析的通用建议</div>
+        <div class="ref-item"><span class="tag tag-green">规则引用</span> 有明确法规/规范依据</div>
+        <div class="ref-item"><span class="tag tag-yellow">建议与合规确认</span> 需人工判断</div>
+      </div>
+    </div>
+
+    <!-- Phase 4 reference -->
+    <div class="phase-content" id="phase-4-ref">
+      <div class="ref-section">
+        <div class="ref-title">📤 输出说明</div>
+        <div class="ref-item">所有内容可直接复制粘贴到飞书 PRD 文档</div>
+        <div class="ref-item">点击各区块右上角的"复制"按钮</div>
+        <div class="ref-item">或使用右上角"导出结果"一次导出全部</div>
+      </div>
+      <div class="ref-section">
+        <div class="ref-title">🔄 后续流程</div>
+        <div class="ref-item">1. 将输出内容粘贴到 PRD 对应章节</div>
+        <div class="ref-item">2. 运行 <strong>/PRD内审</strong> 做 11 维度完整审查</div>
+        <div class="ref-item">3. 发起团队评审</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Bottom Navigation ===== -->
+<div class="bottom-nav">
+  <button class="btn" id="btn-prev" onclick="prevPhase()" disabled>
+    ← 上一步
+  </button>
+  <div class="bottom-nav-center" id="nav-status">Phase 0 / 4 — 需求决策验证</div>
+  <button class="btn btn-primary" id="btn-next" onclick="nextPhase()">
+    下一步 →
+  </button>
+</div>
+
+<!-- ===== API Key Modal ===== -->
+<div class="modal-overlay" id="apikey-modal">
+  <div class="modal">
+    <div class="modal-title">设置 Claude API Key</div>
+    <div style="background:#e8f5e9;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6;color:#2e7d32;">
+      <strong>💡 免 API Key 模式：</strong>在终端运行 <code style="background:#c8e6c9;padding:2px 6px;border-radius:4px;">node rc-server.js</code> 后访问
+      <code style="background:#c8e6c9;padding:2px 6px;border-radius:4px;">http://localhost:3456</code>，直接使用你的 Claude Code 订阅，无需单独的 API Key。
+    </div>
+    <div class="form-group">
+      <label>API Key <span style="font-weight:normal;color:#999;font-size:12px;">（直连模式才需要）</span></label>
+      <input type="password" id="apikey-input" placeholder="sk-ant-api03-...">
+      <div class="form-hint">你的 API Key 仅存储在浏览器本地 (localStorage)，不会上传到任何服务器。</div>
+    </div>
+    <div class="form-group">
+      <label>模型</label>
+      <select id="model-select">
+        <option value="claude-sonnet-4-6">Claude Sonnet 4.6（推荐，快速）</option>
+        <option value="claude-opus-4-6">Claude Opus 4.6（最强，较慢）</option>
+        <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5（最快，经济）</option>
+      </select>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeApiKeyModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Toast ===== -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// 全局状态
+// ============================================================
+const APP_STATE = {
+  currentPhase: 0,
+  maxPhase: 4,
+  prdText: '',
+  // Phase 0 data
+  selectedOKR: null,
+  okrContribution: '',
+  q1Answer: '',
+  q2Answer: '',
+  q3Answer: '',
+  healthChecks: {},
+  classification: '',
+  // Phase 1 data
+  scanResult: null,
+  // Phase 2 data
+  matchResult: null,
+  // Phase 3 data
+  crossRefResult: null,
+  checklistResults: {},
+  // Phase 4 data
+  outputGenerated: false,
+  // Phase completion
+  phaseCompleted: [false, false, false, false, false],
+  // AI state
+  aiProcessing: false,
+};
+
+const PHASES = [
+  { id: 0, label: '决策验证', name: '需求决策验证' },
+  { id: 1, label: '扫描识别', name: '扫描与识别' },
+  { id: 2, label: '知识匹配', name: '知识匹配' },
+  { id: 3, label: '交叉检查', name: '交叉检查与确认' },
+  { id: 4, label: '输出结果', name: '输出结果' },
+];
+
+// ============================================================
+// OKR 知识库数据
+// ============================================================
+const OKR_DATA = [
+  {
+    module: '账户管理',
+    objectives: [
+      {
+        o: '提升账户/品类的激活率',
+        krs: ['支持新品类的激活流程', '提高账户管理的易用性/易发现'],
+      },
+      {
+        o: '提升账户管理营运人效',
+        krs: [],
+      },
+      {
+        o: '补齐账户管理的功能能力',
+        krs: [],
+      },
+    ],
+  },
+  {
+    module: '合规业务',
+    objectives: [
+      {
+        o: '提高合规系统营运人效',
+        krs: ['降低供应商采买成本'],
+      },
+      {
+        o: '提高合规系统集团可复用性',
+        krs: [],
+      },
+      {
+        o: '降低合规场景系统风险',
+        krs: [],
+      },
+    ],
+  },
+  {
+    module: '登录注册',
+    objectives: [
+      {
+        o: '增强登录场景的安全验证因子',
+        krs: [],
+      },
+      {
+        o: '提高注册转化率',
+        krs: [],
+      },
+    ],
+  },
+];
+
+// ============================================================
+// 六不要 & 三看 数据
+// ============================================================
+const DONT_LIST = [
+  { id: 'N1', label: '感觉不错就做', desc: '只有主观判断，无数据支撑' },
+  { id: 'N2', label: '看到别人做就跟', desc: '提到竞品做了但没分析适用性' },
+  { id: 'N3', label: '想做就做（无论证）', desc: '直接跳到方案，缺少问题论证' },
+  { id: 'N4', label: '被动接需求', desc: '需求来源单一且未验证' },
+  { id: 'N5', label: '想当然', desc: '假设未经验证' },
+  { id: 'N6', label: '不看数据', desc: '没有任何量化信息' },
+];
+
+const LOOK_LIST = [
+  { id: 'L1', label: '看宏观', desc: '行业趋势、监管方向是否考虑' },
+  { id: 'L2', label: '看竞争', desc: '同类方案是否了解' },
+  { id: 'L3', label: '看用户', desc: '用户需求是否经过研究' },
+];
+
+// ============================================================
+// 三问法四种变体
+// ============================================================
+const THREE_Q_VARIANTS = {
+  userFeedback: {
+    label: '用户反馈驱动', q1: '反馈背后的真实问题是什么？', q2: '反馈用户是否代表目标群体？', q3: '修复成本 vs 影响面？'
+  },
+  bizProject: {
+    label: '业务项目驱动', q1: '项目的业务目标是什么？', q2: '项目服务的内部/外部客群？', q3: '项目资源投入 vs 业务价值？'
+  },
+  bossRequest: {
+    label: '老板需求驱动', q1: '老板期望达成的指标是什么？', q2: '老板的判断依据是否验证过？', q3: '有无更轻量的替代方案？'
+  },
+  dataAnalysis: {
+    label: '数据分析驱动', q1: '数据指向的核心问题是什么？', q2: '受影响的用户范围和频次？', q3: '修复后指标提升预期？'
+  },
+};
+
+// ============================================================
+// ② 细节规范库：8大设计模式规范（摘要）
+// ============================================================
+const DESIGN_NORMS = [
+  { id: 'N01', name: '筛选分层规范', trigger: '列表|筛选|搜索|查询|表格',
+    summary: '常驻筛选≤3-4个，其余收纳到高级搜索；已激活高级筛选要有标记；OGS分群（超时/即将超时/正常）' },
+  { id: 'N02', name: '批量操作三态反馈', trigger: '批量|勾选|全选|多选',
+    summary: '三态反馈：确认（二次确认+影响范围）→进度（实时进度条）→结果摘要（成功N/失败M/跳过K）' },
+  { id: 'N03', name: '版本管理五态模型', trigger: '版本|草稿|发布|归档|驳回',
+    summary: '五种状态：草稿→待审核→已发布→已归档→已驳回；带版本号+变更记录+对比功能' },
+  { id: 'N04', name: '多语言设计规范', trigger: '语种|翻译|多语言|市场差异|本地化',
+    summary: '多语言内容独立管理；翻译状态可追踪；默认回退语言策略；预留文本扩展空间(1.5x)' },
+  { id: 'N05', name: '审核工作台OGS规范', trigger: '审核|审批|通过|驳回|工作台',
+    summary: 'OGS分群：超时(Overdue)/即将超时(Getting close)/正常(Safe)；自动流转制vs认领池制；审批四动作(通过/驳回/转交/加签)' },
+  { id: 'N06', name: '热更新字段区分', trigger: '配置|阈值|参数|可调|热更新',
+    summary: '三类区分：运营配置(热更新)→产品配置(发版更新)→硬编码(代码变更)；配置项需标注归属和变更影响范围' },
+  { id: 'N07', name: '主副栏目信息架构', trigger: '详情|查看|展示|详情页',
+    summary: '70%主栏(核心业务信息)+30%副栏(辅助/关联信息)；主栏可编辑，副栏只读引用；信息密度分层' },
+  { id: 'N08', name: '数据存档与回溯规范', trigger: '存档|审计|日志|保留|快照|回溯',
+    summary: '决策时点数据用快照(非实时引用)；合规存档≥7年；CRUD+审批+访问六类操作日志；不可篡改审计追踪' },
+];
+
+// ============================================================
+// ① 需求框架库：6大框架（摘要）
+// ============================================================
+const FRAMEWORKS = [
+  { id: 'F01', name: 'PRD三板斧', trigger: '结构|模板|PRD框架',
+    summary: '体验记录（用户视角描述现状痛点）→效果预期（SMART指标+基线→目标）→Checklist（自检清单）' },
+  { id: 'F02', name: '合规争议处理框架', trigger: '合规|争议|法规|监管',
+    summary: '三分类：法规明令（红线,必须遵守）→本地业务惯例（当地通行做法）→其他考量（历史/竞品）；记录当前决策+理由+监管变化影响评估' },
+  { id: 'F03', name: '6W1H跨市场分析框架', trigger: '跨市场|多市场|HK|JP|SG|MY|AU|CA',
+    summary: 'Who/What/When/Where/Why/Which/How 七维度逐市场对比；识别共性vs差异；差异驱动因素（监管/业务/技术/文化）' },
+  { id: 'F04', name: 'MVP分期决策矩阵', trigger: '分期|MVP|一期|二期|优先级',
+    summary: '每个功能按"业务价值×实现复杂度"打分；高价值低复杂度=P0；分期依据要可追溯；灰度观察期建议' },
+  { id: 'F05', name: '实体关系描述规范', trigger: '实体|ER|数据模型|关系',
+    summary: '核心实体识别→关系类型(1:1/1:N/M:N)→关键属性→生命周期状态；用自然语言辅助ER图' },
+  { id: 'F06', name: 'PRD结构对比', trigger: 'PRD对比|结构|最佳实践',
+    summary: '三份优质PRD的共性：背景有数据支撑、场景有六要素、流程有泳道图、规则有决策表、异常有兜底方案' },
+];
+
+// ============================================================
+// Checklist 路由（按业务域激活）
+// ============================================================
+const DOMAIN_CHECKLISTS = {
+  '开户': [
+    'KYC 尽职调查要求是否覆盖',
+    '身份验证方式是否符合各市场要求',
+    '客户分类(个人/机构/联名)是否明确',
+    '开户协议和风险披露是否提及',
+    '跨市场开户差异是否列出',
+  ],
+  '资金': [
+    '出入金渠道是否列明',
+    '汇率处理规则是否定义',
+    '资金到账时效是否标注',
+    '反洗钱(AML)规则是否考虑',
+    '交易限额与风控规则是否说明',
+  ],
+  '合规': [
+    '监管原文是否引用（区分红线vs指导性）',
+    '合规审核流程是否定义（含升级路径）',
+    '审计追踪要求是否覆盖',
+    '敏感数据保护措施是否说明',
+    '跨境数据传输是否合规',
+  ],
+  '账户管理': [
+    '账户状态变更规则是否完整',
+    '不动账户判定条件是否明确',
+    '品类激活/注销流程是否定义',
+    '账户权限与角色是否说明',
+    '存量账户兼容方案是否考虑',
+  ],
+  '登录注册': [
+    '登录验证因子是否说明',
+    '注册转化漏斗是否分析',
+    '密码/验证码策略是否定义',
+    '多设备/多端登录策略是否明确',
+    '异常登录检测是否考虑',
+  ],
+};
+
+// ============================================================
+// 9项关联事项 checklist（来自实战经验）
+// ============================================================
+const RELATED_ITEMS = [
+  { id: 'RI01', label: '上线前待办', desc: '是否有非开发前置条件？（AB测试/消息模板/白名单/帮助中心/供应商上线）' },
+  { id: 'RI02', label: '需求相关材料', desc: '多语言文档/外部接口文档/对照表/配置ID/供应商Key 是否外链？' },
+  { id: 'RI03', label: '名词释义', desc: '生造词/专业术语是否有定义？' },
+  { id: 'RI04', label: '埋点', desc: '是否需要新增埋点？关键节点追踪？' },
+  { id: 'RI05', label: '权限点', desc: '是否需要新增权限点？权限粒度？' },
+  { id: 'RI06', label: '消息模板', desc: '是否需要新增消息/通知模板？' },
+  { id: 'RI07', label: '存量数据', desc: '历史数据如何处理？新旧兼容方案？' },
+  { id: 'RI08', label: '灰度发布', desc: '是否需要灰度？灰度策略和观察指标？' },
+  { id: 'RI09', label: '线上验证', desc: '发布后如何验证功能正常？回退方案？' },
+];
+
+// ============================================================
+// 需求单七项质量标准
+// ============================================================
+const QUALITY_STANDARDS = [
+  { id: 'QS1', label: '无歧义', desc: '术语唯一定义，无多义词，无"可能""大概""待定"' },
+  { id: 'QS2', label: '完整', desc: '全部功能描述清楚，含合法/非法输入响应' },
+  { id: 'QS3', label: '明确', desc: '无"待定"/"TBD"，所有描述确定' },
+  { id: 'QS4', label: '结构清晰', desc: '从文档结构可见产品结构，标题层级合理' },
+  { id: 'QS5', label: '逻辑流畅', desc: '有主题→有重点→段落关联→表达统一' },
+  { id: 'QS6', label: '避免冗余', desc: '同一功能不重复描述，语言精练' },
+  { id: 'QS7', label: '可追踪', desc: '需求源流清晰可追溯，标注需求来源' },
+];
+
+// ============================================================
+// API 调用
+// ============================================================
+function getApiKey() {
+  return localStorage.getItem('claude_api_key') || '';
+}
+
+function getModel() {
+  return localStorage.getItem('claude_model') || 'claude-sonnet-4-6';
+}
+
+async function callClaude(systemPrompt, userMessage) {
+  const apiKey = getApiKey();
+
+  APP_STATE.aiProcessing = true;
+
+  try {
+    // 模式一：有 API Key → 直连 Anthropic API
+    if (apiKey) {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true',
+        },
+        body: JSON.stringify({
+          model: getModel(),
+          max_tokens: 8192,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userMessage }],
+        }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error?.message || `API 错误 ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      return data.content?.[0]?.text || '';
+    }
+
+    // 模式二：无 API Key → 本地代理（node rc-server.js）
+    const proxyUrl = window._rcProxyUrl || 'http://localhost:3456/api/claude';
+    try {
+      const resp = await fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemPrompt,
+          userMessage,
+          model: getModel(),
+        }),
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err.error || `代理错误 ${resp.status}`);
+      }
+
+      const data = await resp.json();
+      return data.text || '';
+    } catch (proxyErr) {
+      // 代理也不通 → 提示用户
+      showToast('未设置 API Key 且本地代理未运行。请设置 API Key 或启动 node rc-server.js');
+      showApiKeyModal();
+      return null;
+    }
+  } catch (e) {
+    showToast('AI 调用失败: ' + e.message);
+    console.error('Claude API error:', e);
+    return null;
+  } finally {
+    APP_STATE.aiProcessing = false;
+  }
+}
+
+// ============================================================
+// Phase 导航
+// ============================================================
+function renderProgressBar() {
+  const bar = document.getElementById('progress-bar');
+  bar.innerHTML = '';
+  PHASES.forEach((phase, i) => {
+    const step = document.createElement('div');
+    step.className = 'phase-step';
+    if (i === APP_STATE.currentPhase) step.className += ' active';
+    if (APP_STATE.phaseCompleted[i]) step.className += ' completed';
+
+    const dot = document.createElement('div');
+    dot.className = 'phase-dot';
+    if (i === APP_STATE.currentPhase) dot.className += ' active';
+    if (APP_STATE.phaseCompleted[i]) dot.className += ' completed';
+    dot.textContent = APP_STATE.phaseCompleted[i] ? '✓' : i;
+    dot.onclick = () => goToPhase(i);
+
+    const label = document.createElement('span');
+    label.className = 'phase-label';
+    label.textContent = phase.label;
+
+    step.appendChild(dot);
+    step.appendChild(label);
+    bar.appendChild(step);
+
+    if (i < PHASES.length - 1) {
+      const conn = document.createElement('div');
+      conn.className = 'phase-connector';
+      if (APP_STATE.phaseCompleted[i]) conn.className += ' completed';
+      bar.appendChild(conn);
+    }
+  });
+}
+
+function showPhaseContent(phaseId) {
+  document.querySelectorAll('.phase-content').forEach(el => el.classList.remove('active'));
+  const left = document.getElementById(`phase-${phaseId}-content`);
+  const right = document.getElementById(`phase-${phaseId}-ref`);
+  if (left) left.classList.add('active');
+  if (right) right.classList.add('active');
+}
+
+function updateNavStatus() {
+  const phase = PHASES[APP_STATE.currentPhase];
+  document.getElementById('nav-status').textContent =
+    `Phase ${phase.id} / ${APP_STATE.maxPhase} — ${phase.name}`;
+
+  const prevBtn = document.getElementById('btn-prev');
+  const nextBtn = document.getElementById('btn-next');
+
+  prevBtn.disabled = APP_STATE.currentPhase === 0;
+
+  if (APP_STATE.currentPhase === APP_STATE.maxPhase) {
+    nextBtn.textContent = '完成';
+    nextBtn.disabled = false;
+  } else {
+    nextBtn.textContent = '下一步 →';
+    nextBtn.disabled = false;
+  }
+}
+
+function goToPhase(phaseId) {
+  if (phaseId < 0 || phaseId > APP_STATE.maxPhase) return;
+  // Allow going back, or forward only if previous phase completed
+  if (phaseId > APP_STATE.currentPhase && !APP_STATE.phaseCompleted[APP_STATE.currentPhase]) {
+    showToast('请先完成当前阶段');
+    return;
+  }
+  APP_STATE.currentPhase = phaseId;
+  renderProgressBar();
+  showPhaseContent(phaseId);
+  updateNavStatus();
+  onPhaseEnter(phaseId);
+}
+
+function nextPhase() {
+  if (APP_STATE.currentPhase === APP_STATE.maxPhase) {
+    // Final phase - export
+    exportResults();
+    return;
+  }
+  // Phase 0 validation
+  if (APP_STATE.currentPhase === 0) {
+    if (!APP_STATE.prdText) {
+      showToast('请先粘贴 PRD 内容并点击"开始分析"');
+      return;
+    }
+    if (!APP_STATE.selectedOKR) {
+      showToast('请选择需求挂钩的 OKR 目标');
+      return;
+    }
+    const q1 = document.getElementById('q1-answer')?.value.trim();
+    if (!q1) {
+      showToast('请至少填写 Q1 根目的');
+      return;
+    }
+    if (!APP_STATE.classification) {
+      showToast('请选择需求分类（简单/常规/复杂）');
+      return;
+    }
+  }
+  // Mark current as completed
+  APP_STATE.phaseCompleted[APP_STATE.currentPhase] = true;
+  goToPhase(APP_STATE.currentPhase + 1);
+}
+
+function prevPhase() {
+  goToPhase(APP_STATE.currentPhase - 1);
+}
+
+// ============================================================
+// Phase 入口逻辑
+// ============================================================
+async function onPhaseEnter(phaseId) {
+  switch (phaseId) {
+    case 1: await runPhase1(); break;
+    case 2: await runPhase2(); break;
+    case 3: await runPhase3(); break;
+    case 4: generatePhase4Output(); break;
+  }
+}
+
+// ============================================================
+// Phase 0: 需求决策验证
+// ============================================================
+function renderOKRList() {
+  const container = document.getElementById('okr-list');
+  const refContainer = document.getElementById('ref-okr-display');
+  container.innerHTML = '';
+  refContainer.innerHTML = '';
+
+  OKR_DATA.forEach(module => {
+    module.objectives.forEach((obj, oi) => {
+      const key = `${module.module}::${obj.o}`;
+      const card = document.createElement('div');
+      card.className = 'okr-card' + (APP_STATE.selectedOKR === key ? ' selected' : '');
+      card.onclick = () => {
+        APP_STATE.selectedOKR = key;
+        renderOKRList();
+      };
+
+      let html = `<div class="okr-objective">📌 [${module.module}] ${obj.o}</div>`;
+      obj.krs.forEach(kr => {
+        html += `<div class="okr-kr">⭐ ${kr}</div>`;
+      });
+      if (obj.krs.length === 0) {
+        html += `<div class="okr-kr" style="color:var(--gray-400)">（待补充 KR）</div>`;
+      }
+      card.innerHTML = html;
+      container.appendChild(card);
+
+      // Also render in reference panel
+      const refItem = document.createElement('div');
+      refItem.className = 'ref-item';
+      refItem.innerHTML = `<strong>${module.module}</strong>：${obj.o}`;
+      refContainer.appendChild(refItem);
+    });
+  });
+}
+
+function renderHealthChecks() {
+  const dontContainer = document.getElementById('p0-dont-list');
+  dontContainer.innerHTML = '';
+  DONT_LIST.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'checklist-item' + (APP_STATE.healthChecks[item.id] ? ' checked' : '');
+    el.innerHTML = `
+      <input type="checkbox" ${APP_STATE.healthChecks[item.id] ? 'checked' : ''}
+        onchange="APP_STATE.healthChecks['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+      <div class="checklist-label">
+        <strong>${item.id} ${item.label}</strong>
+        <div style="font-size:12px;color:var(--gray-500)">${item.desc}</div>
+      </div>
+    `;
+    dontContainer.appendChild(el);
+  });
+
+  const lookContainer = document.getElementById('p0-look-list');
+  lookContainer.innerHTML = '';
+  LOOK_LIST.forEach(item => {
+    const el = document.createElement('div');
+    el.className = 'checklist-item' + (APP_STATE.healthChecks[item.id] ? ' checked' : '');
+    el.innerHTML = `
+      <input type="checkbox" ${APP_STATE.healthChecks[item.id] ? 'checked' : ''}
+        onchange="APP_STATE.healthChecks['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+      <div class="checklist-label">
+        <strong>${item.id} ${item.label}</strong>
+        <div style="font-size:12px;color:var(--gray-500)">${item.desc}</div>
+      </div>
+    `;
+    lookContainer.appendChild(el);
+  });
+
+  // Classification placeholder
+  document.getElementById('p0-classification').innerHTML = `
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm ${APP_STATE.classification === 'simple' ? 'btn-primary' : ''}"
+        onclick="setClassification('simple')">简单需求</button>
+      <button class="btn btn-sm ${APP_STATE.classification === 'normal' ? 'btn-primary' : ''}"
+        onclick="setClassification('normal')">常规需求</button>
+      <button class="btn btn-sm ${APP_STATE.classification === 'complex' ? 'btn-primary' : ''}"
+        onclick="setClassification('complex')">复杂需求</button>
+    </div>
+    <div class="form-hint" style="margin-top:8px">
+      简单：单一问题→单一方案 ｜ 常规：单一问题→多方案 ｜ 复杂：宽泛问题→需拆解
+    </div>
+  `;
+}
+
+function setClassification(type) {
+  APP_STATE.classification = type;
+  renderHealthChecks();
+}
+
+async function startPhase0() {
+  const prdText = document.getElementById('prd-input').value.trim();
+  if (!prdText) {
+    showToast('请先粘贴 PRD 内容');
+    return;
+  }
+  APP_STATE.prdText = prdText;
+
+  // Disable button to prevent double-click
+  const startBtn = document.getElementById('btn-start-p0');
+  startBtn.disabled = true;
+  startBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px"></span> 分析中...';
+
+  // Show OKR step
+  document.getElementById('p0-step-input').style.display = 'none';
+  document.getElementById('p0-step-okr').style.display = 'block';
+  document.getElementById('p0-step-3q').style.display = 'block';
+  document.getElementById('p0-step-health').style.display = 'block';
+
+  renderOKRList();
+  renderHealthChecks();
+
+  // Call AI to analyze PRD and suggest OKR + prefill 三问法
+  const analysisEl = document.getElementById('p0-ai-analysis');
+  analysisEl.innerHTML = '<div class="ai-thinking"><span class="spinner"></span>AI 正在分析 PRD 内容，识别业务域与 OKR 对齐建议...</div>';
+
+  // Build drive type descriptions for prompt
+  const variantDesc = Object.entries(THREE_Q_VARIANTS).map(([k, v]) =>
+    `- ${v.label}(${k}): Q1侧重"${v.q1Focus}", Q2侧重"${v.q2Focus}", Q3侧重"${v.q3Focus}"`
+  ).join('\n');
+
+  const systemPrompt = `你是一位资深券商柜台业务PM的需求共创助手。你的任务是分析PRD内容，完成以下工作：
+
+1. 识别PRD涉及的业务域（开户/资金/合规/账户管理/登录注册）
+2. 识别适用市场（HK/JP/SG/MY/AU/CA/US）
+3. 基于业务域，建议最匹配的OKR（从以下OKR数据中选择）
+4. 判断需求驱动类型（用户反馈/业务项目/老板需求/数据分析），并按对应三问法变体预填
+5. 预填三问法（Q1根目的/Q2客群+问题/Q3 ROI），内容要具体、可操作，不能空泛
+6. 检测六不要中的潜在陷阱——逐一扫描PRD §1背景，检测是否踩中N1-N6
+7. 检测三看视角是否充分——PRD是否缺少宏观/竞争/用户视角
+8. 建议需求分类（简单/常规/复杂）
+
+三问法四种变体：
+${variantDesc}
+
+OKR数据：
+${JSON.stringify(OKR_DATA, null, 2)}
+
+六不要信号：
+${DONT_LIST.map(d => `${d.id} ${d.label}: ${d.desc}`).join('\n')}
+
+三看视角：
+${LOOK_LIST.map(l => `${l.id} ${l.label}: ${l.desc}`).join('\n')}
+
+分析原则：
+- Q1/Q2/Q3 的预填必须基于PRD实际内容，引用具体段落或数据
+- 六不要检测时，对每个N项给出PRD中的具体证据，没有证据则不报警
+- 三看检测时，缺哪个视角就指出来，并给出具体补充方向
+- 需求分类依据：简单（单一问题→单一方案）、常规（单一问题→多可选方案）、复杂（宽泛/多层问题→需先拆解）
+
+输出格式严格为JSON：
+{
+  "businessDomain": "识别的业务域",
+  "markets": ["市场列表"],
+  "suggestedOKR": "模块::O名称",
+  "okrReason": "推荐理由（引用PRD内容说明为什么匹配）",
+  "driveType": "userFeedback|bizProject|bossRequest|dataAnalysis",
+  "driveTypeReason": "判断依据",
+  "q1Prefill": "Q1预填（具体、引用PRD内容、指向明确指标）",
+  "q2Prefill": "Q2预填（明确用户群体+问题描述+数据佐证）",
+  "q3Prefill": "Q3预填（投入估算+回报预期，即使PRD中缺失也要指出缺什么）",
+  "dontWarnings": [{"id": "N1-N6", "warning": "具体警告，引用PRD证据"}],
+  "lookSuggestions": [{"id": "L1-L3", "suggestion": "缺失视角的具体补充建议"}],
+  "classification": "simple|normal|complex",
+  "classificationReason": "分类理由",
+  "summary": "一段话总结：业务域+市场+OKR对齐+三问法评估+决策健康度+分类结论"
+}
+
+只输出JSON，不要输出其他内容。`;
+
+  const result = await callClaude(systemPrompt, `以下是PRD内容（前3000字）：\n\n${prdText.substring(0, 3000)}`);
+
+  if (result) {
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const analysis = JSON.parse(jsonMatch[0]);
+
+        // Display summary with drive type
+        const dtLabel = THREE_Q_VARIANTS[analysis.driveType]?.label || '未识别';
+        analysisEl.innerHTML = `
+          <div class="ai-response">
+            <div class="ai-response-header">🤖 AI 分析结果</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
+              <span class="tag tag-blue">${analysis.businessDomain || '未识别'}</span>
+              ${(analysis.markets || []).map(m => `<span class="tag tag-green">${m}</span>`).join('')}
+              <span class="tag tag-yellow">${analysis.classification || '常规'}需求</span>
+            </div>
+            <strong>驱动类型</strong>：${dtLabel}${analysis.driveTypeReason ? ` — ${analysis.driveTypeReason}` : ''}
+            <strong>需求分类</strong>：${analysis.classificationReason || ''}
+
+${analysis.summary || ''}
+          </div>
+        `;
+
+        // Select suggested OKR
+        if (analysis.suggestedOKR) {
+          APP_STATE.selectedOKR = analysis.suggestedOKR;
+          renderOKRList();
+        }
+
+        // Prefill 三问法
+        if (analysis.q1Prefill) document.getElementById('q1-answer').value = analysis.q1Prefill;
+        if (analysis.q2Prefill) document.getElementById('q2-answer').value = analysis.q2Prefill;
+        if (analysis.q3Prefill) document.getElementById('q3-answer').value = analysis.q3Prefill;
+
+        // Show AI warnings for 六不要
+        const prefillEl = document.getElementById('p0-3q-ai-prefill');
+        if (analysis.dontWarnings?.length > 0) {
+          prefillEl.innerHTML = `
+            <div class="ai-response" style="margin-bottom:16px">
+              <div class="ai-response-header">⚠️ AI 检测到的决策陷阱信号</div>
+              ${analysis.dontWarnings.map(w => `<div>• <strong>${w.id}</strong>：${w.warning}</div>`).join('\n')}
+            </div>
+          `;
+          // Auto-check detected warnings
+          analysis.dontWarnings.forEach(w => {
+            APP_STATE.healthChecks[w.id] = true;
+          });
+          renderHealthChecks();
+        }
+
+        // Show 三看 suggestions
+        if (analysis.lookSuggestions?.length > 0) {
+          const lookEl = document.getElementById('p0-3q-ai-prefill');
+          lookEl.innerHTML += `
+            <div class="ai-response" style="margin-bottom:16px;border-color:#93c5fd;background:#eff6ff">
+              <div class="ai-response-header" style="color:var(--primary)">👁️ 三看视角补充建议</div>
+              ${analysis.lookSuggestions.map(l => `<div>• <strong>${l.id}</strong>：${l.suggestion}</div>`).join('\n')}
+            </div>
+          `;
+        }
+
+        // Set classification
+        if (analysis.classification) {
+          APP_STATE.classification = analysis.classification;
+          renderHealthChecks();
+        }
+
+        // Store scan-like data for later phases
+        APP_STATE.scanResult = analysis;
+      }
+    } catch (e) {
+      analysisEl.innerHTML = `
+        <div class="ai-response">
+          <div class="ai-response-header">🤖 AI 分析结果</div>
+          ${result}
+        </div>
+      `;
+    }
+  } else {
+    analysisEl.innerHTML = `
+      <div class="ai-response" style="border-color:#fca5a5;background:#fef2f2">
+        <div class="ai-response-header" style="color:var(--danger)">❌ AI 分析失败</div>
+        请检查 API Key 设置，或手动完成本阶段。
+      </div>
+    `;
+  }
+
+  // Re-enable button
+  const startBtn2 = document.getElementById('btn-start-p0');
+  startBtn2.disabled = false;
+  startBtn2.innerHTML = '重新分析 ↻';
+}
+
+// ============================================================
+// Phase 1: 扫描识别
+// ============================================================
+async function runPhase1() {
+  if (APP_STATE.scanResult?.businessDomain) {
+    // Already have scan data from Phase 0
+    renderPhase1Results();
+    return;
+  }
+
+  const container = document.getElementById('p1-results');
+  container.innerHTML = '<div class="ai-thinking"><span class="spinner"></span>正在扫描 PRD 内容...</div>';
+
+  // Build design component detection hints from DESIGN_NORMS
+  const componentHints = DESIGN_NORMS.map(n => `${n.name}(关键词:${n.trigger})`).join('、');
+
+  const systemPrompt = `分析PRD文本，提取以下结构化信息。
+
+设计组件识别提示（如果PRD中出现以下关键词，说明涉及对应设计组件）：
+${componentHints}
+
+输出JSON：
+{
+  "businessDomain": "业务域（开户/资金/合规/账户管理/登录注册）",
+  "markets": ["适用市场：HK/JP/SG/MY/AU/CA/US"],
+  "entities": ["核心业务实体名称（如：客户资料/尽调案件/交易记录等）"],
+  "processes": ["涉及的业务流程（如：开户审核流程/KYC流程等）"],
+  "designComponents": ["PRD中实际涉及的设计组件名称"],
+  "templateSections": {
+    "section1_background": "充分|简略|空白",
+    "section2_detail": "充分|简略|空白",
+    "section3_checklist": "充分|简略|空白",
+    "section4_required": "充分|简略|空白"
+  },
+  "externalDependencies": ["PRD中提到的外部系统/供应商/接口"],
+  "risks": ["识别到的风险点"]
+}
+只输出JSON。`;
+
+  const result = await callClaude(systemPrompt, APP_STATE.prdText.substring(0, 4000));
+  if (result) {
+    try {
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        APP_STATE.scanResult = { ...APP_STATE.scanResult, ...JSON.parse(jsonMatch[0]) };
+      }
+    } catch (e) {
+      // fallback
+    }
+  }
+  renderPhase1Results();
+}
+
+function renderPhase1Results() {
+  const scan = APP_STATE.scanResult || {};
+  const container = document.getElementById('p1-results');
+
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">🏢 业务域</div>
+      <span class="tag tag-blue">${scan.businessDomain || '未识别'}</span>
+    </div>
+    <div class="card">
+      <div class="card-header">🌏 适用市场</div>
+      ${(scan.markets || []).map(m => `<span class="tag tag-blue" style="margin-right:4px">${m}</span>`).join('') || '<span class="tag tag-yellow">未识别</span>'}
+    </div>
+    <div class="card">
+      <div class="card-header">📦 核心实体</div>
+      ${(scan.entities || []).map(e => `<div class="ref-item">${e}</div>`).join('') || '<div class="ref-item" style="color:var(--gray-400)">AI 将在 Phase 2 中深入识别</div>'}
+    </div>
+    <div class="card">
+      <div class="card-header">🔄 涉及流程</div>
+      ${(scan.processes || []).map(p => `<div class="ref-item">${p}</div>`).join('') || '<div class="ref-item" style="color:var(--gray-400)">未识别到明确流程</div>'}
+    </div>
+    <div class="card">
+      <div class="card-header">🎨 设计组件</div>
+      ${(scan.designComponents || []).map(c => `<span class="tag tag-green" style="margin:2px">${c}</span>`).join('') || ''}
+    </div>
+    ${scan.templateSections ? `
+    <div class="card">
+      <div class="card-header">📋 模板填写状态</div>
+      <table style="width:100%;font-size:13px">
+        <tr><td>§1 背景</td><td>${statusTag(scan.templateSections.section1_background)}</td></tr>
+        <tr><td>§2 需求细节</td><td>${statusTag(scan.templateSections.section2_detail)}</td></tr>
+        <tr><td>§3 Checklist</td><td>${statusTag(scan.templateSections.section3_checklist)}</td></tr>
+        <tr><td>§4 必备事项</td><td>${statusTag(scan.templateSections.section4_required)}</td></tr>
+      </table>
+    </div>
+    ` : ''}
+    ${(scan.externalDependencies || []).length > 0 ? `
+    <div class="card">
+      <div class="card-header">🔗 外部依赖</div>
+      ${scan.externalDependencies.map(d => `<span class="tag tag-yellow" style="margin:2px">${d}</span>`).join('')}
+    </div>
+    ` : ''}
+  `;
+}
+
+function statusTag(status) {
+  if (status === '充分') return '<span class="tag tag-green">充分 ✓</span>';
+  if (status === '简略') return '<span class="tag tag-yellow">简略 ⚠️</span>';
+  return '<span class="tag tag-red">空白 ✗</span>';
+}
+
+// ============================================================
+// Phase 2: 知识匹配
+// ============================================================
+async function runPhase2() {
+  if (APP_STATE.matchResult) {
+    renderPhase2Results();
+    return;
+  }
+
+  const container = document.getElementById('p2-results');
+  container.innerHTML = '<div class="ai-thinking"><span class="spinner"></span>正在匹配知识库...</div>';
+
+  const scan = APP_STATE.scanResult || {};
+
+  // Build structured knowledge base for matching
+  const normsList = DESIGN_NORMS.map(n => `${n.id} ${n.name} [触发词:${n.trigger}]: ${n.summary}`).join('\n');
+  const frameworkList = FRAMEWORKS.map(f => `${f.id} ${f.name} [触发词:${f.trigger}]: ${f.summary}`).join('\n');
+
+  const systemPrompt = `你是需求共创助手。基于PRD扫描结果和PRD原文，将内容与知识库交叉匹配。
+
+PRD扫描摘要：
+- 业务域：${scan.businessDomain || '未知'}
+- 市场：${(scan.markets || []).join(',')}
+- 设计组件：${(scan.designComponents || []).join(',')}
+- 核心实体：${(scan.entities || []).join(',')}
+- 涉及流程：${(scan.processes || []).join(',')}
+
+② 细节规范库（设计模式层）——逐条匹配PRD中的设计描述：
+${normsList}
+
+① 需求框架库——逐条匹配PRD的需求结构：
+${frameworkList}
+
+匹配规则：
+1. 用每条规范的"触发词"在PRD原文中做关键词匹配
+2. 匹配到的条目标注相关度：high(🔴 PRD明确涉及)/medium(🟡 可能涉及)/low(🟢 不直接相关但值得参考)
+3. 对high/medium项给出**具体的、引用PRD内容的**建议（不能泛泛而谈）
+4. 还要检查PRD是否涉及合规（→③ 业务规则库，按市场标注）
+
+输出JSON：
+{
+  "matches": [
+    {
+      "knowledgeBase": "①/②/③",
+      "itemId": "N01/F01等",
+      "item": "知识条目名称",
+      "relevance": "high|medium|low",
+      "reason": "为什么与本PRD相关（引用PRD中的具体内容）",
+      "suggestion": "基于此知识条目的具体改进建议"
+    }
+  ],
+  "unmatchedNorms": ["未匹配到的规范ID列表，供参考"],
+  "checklistItems": [
+    {
+      "id": "CL-001",
+      "text": "检查项描述",
+      "relevance": "high|medium|low",
+      "aiSuggestion": "AI基于PRD内容的建议"
+    }
+  ]
+}
+只输出JSON。`;
+
+  const result = await callClaude(systemPrompt, APP_STATE.prdText.substring(0, 4000));
+  if (result) {
+    try {
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        APP_STATE.matchResult = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      APP_STATE.matchResult = { matches: [], checklistItems: [] };
+    }
+  }
+  renderPhase2Results();
+}
+
+function renderPhase2Results() {
+  const match = APP_STATE.matchResult || { matches: [], checklistItems: [] };
+  const container = document.getElementById('p2-results');
+
+  // Group by relevance
+  const highMatches = (match.matches || []).filter(m => m.relevance === 'high');
+  const medMatches = (match.matches || []).filter(m => m.relevance === 'medium');
+  const lowMatches = (match.matches || []).filter(m => m.relevance === 'low');
+
+  let html = '';
+  if (match.matches?.length > 0) {
+    const renderGroup = (title, color, items) => {
+      if (!items.length) return '';
+      let g = `<div style="margin-bottom:16px"><div style="font-weight:600;font-size:13px;color:${color};margin-bottom:8px">${title}（${items.length}条）</div>`;
+      items.forEach(m => {
+        g += `
+          <div style="padding:8px 0;border-bottom:1px solid var(--gray-100)">
+            <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+              <span class="tag tag-blue">${m.knowledgeBase}</span>
+              <span style="font-weight:600;font-size:14px">${m.item}</span>
+            </div>
+            <div style="font-size:13px;color:var(--gray-600)">${m.reason}</div>
+            <div style="font-size:13px;color:var(--primary);margin-top:4px">💡 ${m.suggestion}</div>
+          </div>
+        `;
+      });
+      g += '</div>';
+      return g;
+    };
+    html += '<div class="card"><div class="card-header">📚 知识库匹配结果</div>';
+    html += renderGroup('🔴 高相关', 'var(--danger)', highMatches);
+    html += renderGroup('🟡 可能相关', 'var(--warning)', medMatches);
+    html += renderGroup('🟢 参考', 'var(--success)', lowMatches);
+    html += '</div>';
+  } else {
+    html += '<div class="card"><div class="card-header">📚 知识匹配结果</div><div style="color:var(--gray-400);font-size:14px">未检测到强匹配的知识条目，请继续下一步。</div></div>';
+  }
+
+  // Show unmatched norms as reference
+  if (match.unmatchedNorms?.length > 0) {
+    html += `<div class="card"><div class="card-header" style="color:var(--gray-400)">📎 未匹配的规范（供参考）</div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px">
+        ${match.unmatchedNorms.map(id => {
+          const norm = DESIGN_NORMS.find(n => n.id === id) || FRAMEWORKS.find(f => f.id === id);
+          return `<span class="tag" style="background:var(--gray-100);color:var(--gray-500)">${norm?.name || id}</span>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+// ============================================================
+// Phase 3: 交叉检查 + Checklist
+// ============================================================
+async function runPhase3() {
+  if (APP_STATE.crossRefResult) {
+    renderPhase3Results();
+    return;
+  }
+
+  const p3aContainer = document.getElementById('p3a-results');
+  p3aContainer.innerHTML = '<div class="ai-thinking"><span class="spinner"></span>正在进行交叉检查（约30秒）...</div>';
+
+  const scan = APP_STATE.scanResult || {};
+  const matches = APP_STATE.matchResult?.matches || [];
+  const domain = scan.businessDomain || '';
+
+  // Build domain checklist
+  const domainCL = DOMAIN_CHECKLISTS[domain] || [];
+  const domainCLText = domainCL.length > 0
+    ? `业务域[${domain}]专属 Checklist：\n${domainCL.map((c, i) => `DC${i + 1}. ${c}`).join('\n')}`
+    : '未匹配到业务域专属 Checklist。';
+
+  // Build related items
+  const riText = RELATED_ITEMS.map(r => `${r.id} ${r.label}: ${r.desc}`).join('\n');
+
+  // Build quality standards
+  const qsText = QUALITY_STANDARDS.map(q => `${q.id} ${q.label}: ${q.desc}`).join('\n');
+
+  // Build matched norms for cross-ref
+  const highMatches = matches.filter(m => m.relevance === 'high' || m.relevance === 'medium');
+  const matchedNormsText = highMatches.map(m => `[${m.knowledgeBase}] ${m.item}: ${m.suggestion || ''}`).join('\n');
+
+  const systemPrompt = `你是需求共创助手，正在进行Phase 3全维度交叉检查。
+
+## 任务一览
+1. **3a 需求细节交叉检查**：对PRD中的每个设计描述，与Phase 2匹配到的知识条目逐一比对，找出偏差和缺失
+2. **3a 文档质量检查**：用七项质量标准扫描PRD文档本身的写作质量
+3. **3a+ 跨模块关联检查**：扫描五种跨模块依赖模式（D1-D5）
+4. **3b 业务域Checklist**：基于业务域生成专属检查项
+5. **3b 关联事项检查**：9项关联事项逐一判断是否涉及
+
+## 知识库匹配结果（Phase 2 高相关/可能相关）
+${matchedNormsText || '无匹配结果'}
+
+## 五种跨模块依赖模式
+- D1 共享数据实体变更：共用实体（国家代码/证件类型/客户资料）变更需同步所有消费方。检测信号：PRD中出现"读取XX系统数据"、"依赖XX字段"、"共享/引用/同步/主数据"
+- D2 上下游系统联动：一个系统输出是另一个系统输入。检测信号："下游/上游/消费方/输出到/接口/回调/写回"
+- D3 跨系统状态一致性：同一实体在多系统有状态，需定义优先级。检测信号："状态/联动/一致性/同步状态/跨系统查询"
+- D4 供应商/外部依赖共享：多系统依赖同一外部供应商数据源。检测信号："供应商/World Check/KYCC/ASF/第三方"
+- D5 功能边界模糊：功能在系统间归属不清。检测信号："边界/归属/重叠/统一入口/哪个系统负责"
+
+## 七项文档质量标准
+${qsText}
+
+## 业务域专属 Checklist
+${domainCLText}
+
+## 九项关联事项（逐一判断PRD是否涉及，涉及则给出具体建议）
+${riText}
+
+## 权威性标注规则
+- "AI建议"：基于分析的通用建议
+- "规则引用"：有明确法规/规范/知识库条目依据（标明出处）
+- "建议与合规确认"：判断模糊，需人工与合规确认
+
+## 分析原则
+- 每个发现必须**引用PRD中的具体内容**（段落/字段/描述），不能泛泛而谈
+- 交叉检查以Phase 2匹配到的知识条目为依据，指出PRD与规范的偏差
+- D1-D5扫描要看PRD中提到的实体、接口、状态、外部依赖，按信号匹配
+- Checklist按业务域路由，对每项给出"与本PRD的关联"和"AI建议"
+- 关联事项对每项判断"涉及/不涉及"，涉及的给具体建议
+
+PRD扫描摘要：
+- 业务域: ${domain}, 市场: ${(scan.markets || []).join(',')}, 分类: ${scan.classification || ''}
+- 实体: ${(scan.entities || []).join(',')}, 流程: ${(scan.processes || []).join(',')}, 组件: ${(scan.designComponents || []).join(',')}
+
+输出JSON：
+{
+  "crossRefFindings": [
+    {
+      "section": "PRD章节/位置",
+      "finding": "偏差或缺失描述（引用PRD内容）",
+      "knowledgeRef": "引用的知识库条目ID和名称",
+      "suggestion": "具体改进建议",
+      "authority": "AI建议|规则引用|建议与合规确认",
+      "priority": "P0|P1|P2|P3"
+    }
+  ],
+  "qualityFindings": [
+    {
+      "standardId": "QS1-QS7",
+      "standardLabel": "标准名称",
+      "status": "pass|warn|fail",
+      "detail": "具体说明（引用PRD内容）"
+    }
+  ],
+  "crossModuleFindings": [
+    {
+      "pattern": "D1|D2|D3|D4|D5",
+      "description": "发现描述",
+      "impact": "影响说明",
+      "suggestion": "建议",
+      "evidence": "PRD中的证据"
+    }
+  ],
+  "domainChecklist": [
+    {
+      "id": "DC1",
+      "text": "检查项内容",
+      "status": "relevant|irrelevant",
+      "aiSuggestion": "与本PRD的关联和建议"
+    }
+  ],
+  "relatedItems": [
+    {
+      "id": "RI01-RI09",
+      "label": "关联事项名称",
+      "involved": true或false,
+      "reason": "判断理由",
+      "suggestion": "如涉及则给建议"
+    }
+  ],
+  "checklist": {
+    "high": [{"id":"H1","text":"检查项","aiSuggestion":"建议"}],
+    "medium": [{"id":"M1","text":"检查项","aiSuggestion":"建议"}],
+    "low": [{"id":"L1","text":"检查项","note":"标记不涉及的理由"}]
+  }
+}
+只输出JSON。`;
+
+  const result = await callClaude(systemPrompt, `以下是PRD完整内容（前8000字）：\n\n${APP_STATE.prdText.substring(0, 8000)}`);
+  if (result) {
+    try {
+      const jsonMatch = result.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        APP_STATE.crossRefResult = JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      APP_STATE.crossRefResult = { crossRefFindings: [], crossModuleFindings: [], checklist: { high: [], medium: [], low: [] } };
+    }
+  }
+  renderPhase3Results();
+}
+
+function renderPhase3Results() {
+  const cr = APP_STATE.crossRefResult || {};
+
+  // 3a findings
+  const p3aContainer = document.getElementById('p3a-results');
+  const findings = cr.crossRefFindings || [];
+  if (findings.length > 0) {
+    p3aContainer.innerHTML = findings.map(f => `
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <span class="tag ${f.priority === 'P0' || f.priority === 'P1' ? 'tag-red' : f.priority === 'P2' ? 'tag-yellow' : 'tag-green'}">${f.priority}</span>
+          <span class="tag tag-blue">${f.authority}</span>
+        </div>
+        <div style="font-size:14px;font-weight:600;margin-bottom:4px">${f.section}</div>
+        <div style="font-size:13px;color:var(--gray-600);margin-bottom:8px">${f.finding}</div>
+        ${f.knowledgeRef ? `<div style="font-size:12px;color:var(--gray-400)">📚 ${f.knowledgeRef}</div>` : ''}
+        <div style="font-size:13px;color:var(--primary);margin-top:8px">💡 ${f.suggestion}</div>
+      </div>
+    `).join('');
+  } else {
+    p3aContainer.innerHTML = '<div style="color:var(--gray-400);font-size:14px">未发现明显的规范偏差。</div>';
+  }
+
+  // 3a quality standards
+  const qContainer = document.getElementById('p3a-quality-results');
+  const qFindings = cr.qualityFindings || [];
+  if (qFindings.length > 0) {
+    qContainer.innerHTML = `<div class="card">${qFindings.map(q => {
+      const icon = q.status === 'pass' ? '✅' : q.status === 'warn' ? '⚠️' : '❌';
+      const color = q.status === 'pass' ? 'var(--success)' : q.status === 'warn' ? 'var(--warning)' : 'var(--danger)';
+      return `
+        <div style="padding:6px 0;border-bottom:1px solid var(--gray-100);display:flex;gap:8px;align-items:flex-start">
+          <span style="font-size:16px;flex-shrink:0">${icon}</span>
+          <div>
+            <span style="font-weight:600;color:${color}">${q.standardLabel || q.standardId}</span>
+            <div style="font-size:13px;color:var(--gray-600);margin-top:2px">${q.detail}</div>
+          </div>
+        </div>
+      `;
+    }).join('')}</div>`;
+  } else {
+    // Fallback: show static quality standards
+    qContainer.innerHTML = `<div class="card">${QUALITY_STANDARDS.map(q => `
+      <div style="padding:6px 0;border-bottom:1px solid var(--gray-100);display:flex;gap:8px;align-items:flex-start">
+        <span style="font-size:16px;flex-shrink:0">⬜</span>
+        <div>
+          <span style="font-weight:600">${q.label}</span>
+          <div style="font-size:12px;color:var(--gray-400)">${q.desc}</div>
+        </div>
+      </div>
+    `).join('')}</div>`;
+  }
+
+  // 3a+ cross-module
+  const cmContainer = document.getElementById('p3a-plus-results');
+  const cmFindings = cr.crossModuleFindings || [];
+  if (cmFindings.length > 0) {
+    cmContainer.innerHTML = cmFindings.map(f => `
+      <div class="card">
+        <div class="card-header"><span class="tag tag-yellow">${f.pattern}</span> ${f.description}</div>
+        <div style="font-size:13px;color:var(--gray-600)">${f.impact}</div>
+        ${f.evidence ? `<div style="font-size:12px;color:var(--gray-400);margin-top:4px">📄 ${f.evidence}</div>` : ''}
+        <div style="font-size:13px;color:var(--primary);margin-top:8px">💡 ${f.suggestion}</div>
+      </div>
+    `).join('');
+  } else {
+    cmContainer.innerHTML = '<div style="color:var(--gray-400);font-size:14px">未检测到明显的跨模块依赖风险。</div>';
+  }
+
+  // 3b domain checklist
+  const dcContainer = document.getElementById('p3b-domain-list');
+  const dcItems = cr.domainChecklist || [];
+  if (dcItems.length > 0) {
+    dcContainer.innerHTML = dcItems.map(item => {
+      const isRelevant = item.status === 'relevant';
+      const checked = APP_STATE.checklistResults[item.id];
+      return `
+        <div class="checklist-item ${checked ? 'checked' : ''}" style="${!isRelevant ? 'opacity:0.5' : ''}">
+          <input type="checkbox" ${checked ? 'checked' : ''}
+            onchange="APP_STATE.checklistResults['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+          <div class="checklist-label">
+            <div>${isRelevant ? '🔴' : '🟢'} ${item.text}</div>
+            ${item.aiSuggestion ? `<div style="font-size:12px;color:var(--primary);margin-top:4px">💡 ${item.aiSuggestion}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    // Fallback: show static domain checklist
+    const domain = APP_STATE.scanResult?.businessDomain || '';
+    const staticCL = DOMAIN_CHECKLISTS[domain] || [];
+    if (staticCL.length > 0) {
+      dcContainer.innerHTML = staticCL.map((text, i) => {
+        const id = `DC${i + 1}`;
+        const checked = APP_STATE.checklistResults[id];
+        return `
+          <div class="checklist-item ${checked ? 'checked' : ''}">
+            <input type="checkbox" ${checked ? 'checked' : ''}
+              onchange="APP_STATE.checklistResults['${id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+            <div class="checklist-label"><div>${text}</div></div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      dcContainer.innerHTML = '<div style="color:var(--gray-400);font-size:13px">未匹配到业务域专属 Checklist。</div>';
+    }
+  }
+
+  // 3b AI checklist (layered)
+  renderChecklist('p3b-high-list', cr.checklist?.high || [], 'high');
+  renderChecklist('p3b-mid-list', cr.checklist?.medium || [], 'medium');
+  renderChecklist('p3b-low-list', cr.checklist?.low || [], 'low');
+
+  // 3b related items
+  const riContainer = document.getElementById('p3b-related-list');
+  const riResult = cr.relatedItems || [];
+  if (riResult.length > 0) {
+    riContainer.innerHTML = riResult.map(r => {
+      const checked = APP_STATE.checklistResults[r.id];
+      return `
+        <div class="checklist-item ${checked ? 'checked' : ''}" style="${!r.involved ? 'opacity:0.5' : ''}">
+          <input type="checkbox" ${checked ? 'checked' : ''}
+            onchange="APP_STATE.checklistResults['${r.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+          <div class="checklist-label">
+            <div>${r.involved ? '⚠️' : '✅'} <strong>${r.label}</strong> — ${r.involved ? '涉及' : '不涉及'}</div>
+            <div style="font-size:12px;color:var(--gray-500);margin-top:2px">${r.reason}</div>
+            ${r.involved && r.suggestion ? `<div style="font-size:12px;color:var(--primary);margin-top:4px">💡 ${r.suggestion}</div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } else {
+    // Fallback: show static related items
+    riContainer.innerHTML = RELATED_ITEMS.map(r => {
+      const checked = APP_STATE.checklistResults[r.id];
+      return `
+        <div class="checklist-item ${checked ? 'checked' : ''}">
+          <input type="checkbox" ${checked ? 'checked' : ''}
+            onchange="APP_STATE.checklistResults['${r.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+          <div class="checklist-label">
+            <div><strong>${r.label}</strong></div>
+            <div style="font-size:12px;color:var(--gray-400)">${r.desc}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function renderChecklist(containerId, items, level) {
+  const container = document.getElementById(containerId);
+  if (!items.length) {
+    container.innerHTML = '<div style="color:var(--gray-400);font-size:13px;padding:8px 0">无</div>';
+    return;
+  }
+
+  container.innerHTML = items.map(item => {
+    const checked = APP_STATE.checklistResults[item.id];
+    return `
+      <div class="checklist-item ${checked ? 'checked' : ''}">
+        <input type="checkbox" ${checked ? 'checked' : ''}
+          onchange="APP_STATE.checklistResults['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+        <div class="checklist-label">
+          <div>${item.text}</div>
+          ${item.aiSuggestion ? `<div style="font-size:12px;color:var(--primary);margin-top:4px">💡 ${item.aiSuggestion}</div>` : ''}
+          ${item.note ? `<div style="font-size:12px;color:var(--gray-400);margin-top:4px">${item.note}</div>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ============================================================
+// Phase 4: 输出
+// ============================================================
+function generatePhase4Output() {
+  if (APP_STATE.outputGenerated) return;
+  APP_STATE.outputGenerated = true;
+  document.getElementById('btn-export').disabled = false;
+
+  // OKR output
+  const okrParts = (APP_STATE.selectedOKR || '').split('::');
+  document.getElementById('p4-okr-output').innerHTML = `
+    <button class="copy-btn" onclick="copyBlock('p4-okr-output')">复制</button>
+┌ OKR 挂靠 ──────────────────────────────┐
+│ 业务模块：${okrParts[0] || '未选择'}
+│ 目标(O)：${okrParts[1] || '未选择'}
+│ 本需求预期贡献：${document.getElementById('okr-contribution')?.value || '未填写'}
+└────────────────────────────────────────┘`;
+
+  // Decision output
+  const q1 = document.getElementById('q1-answer')?.value || '';
+  const q2 = document.getElementById('q2-answer')?.value || '';
+  const q3 = document.getElementById('q3-answer')?.value || '';
+  document.getElementById('p4-decision-output').innerHTML = `
+    <button class="copy-btn" onclick="copyBlock('p4-decision-output')">复制</button>
+三问法验证：
+Q1 根目的：${q1 || '未填写'}
+Q2 客群+问题：${q2 || '未填写'}
+Q3 ROI：${q3 || '未填写'}
+
+需求分类：${APP_STATE.classification || '未分类'}
+
+决策健康度：
+${DONT_LIST.filter(d => APP_STATE.healthChecks[d.id]).map(d => `⚠️ ${d.id} ${d.label}`).join('\n') || '✅ 未检测到决策陷阱'}`;
+
+  // Suggestions output (cross-ref findings + quality findings)
+  const findings = APP_STATE.crossRefResult?.crossRefFindings || [];
+  const qFindings = APP_STATE.crossRefResult?.qualityFindings || [];
+  let suggestionsText = '';
+  if (findings.length > 0) {
+    suggestionsText += '交叉检查发现：\n' + findings.map((f, i) => `${i + 1}. [${f.priority}][${f.authority}] ${f.finding}\n   位置：${f.section}\n   建议：${f.suggestion}${f.knowledgeRef ? `\n   引用：${f.knowledgeRef}` : ''}`).join('\n\n');
+  }
+  if (qFindings.length > 0) {
+    const warns = qFindings.filter(q => q.status !== 'pass');
+    if (warns.length > 0) {
+      suggestionsText += '\n\n文档质量待改进：\n' + warns.map(q => `· ${q.standardLabel}: ${q.detail}`).join('\n');
+    }
+  }
+  const cmFindings = APP_STATE.crossRefResult?.crossModuleFindings || [];
+  if (cmFindings.length > 0) {
+    suggestionsText += '\n\n跨模块关联风险：\n' + cmFindings.map(f => `· [${f.pattern}] ${f.description}\n  影响：${f.impact}\n  建议：${f.suggestion}`).join('\n');
+  }
+  document.getElementById('p4-suggestions-output').innerHTML = `
+    <button class="copy-btn" onclick="copyBlock('p4-suggestions-output')">复制</button>
+${suggestionsText || '未发现需要改进的问题。'}`;
+
+  // Checklist output (domain + AI + related items)
+  const cl = APP_STATE.crossRefResult?.checklist || {};
+  const allItems = [...(cl.high || []), ...(cl.medium || []), ...(cl.low || [])];
+  const dcItems = APP_STATE.crossRefResult?.domainChecklist || [];
+  const riItems = APP_STATE.crossRefResult?.relatedItems || [];
+
+  let clText = '';
+  if (dcItems.length > 0) {
+    clText += `业务域专属 Checklist（${APP_STATE.scanResult?.businessDomain || ''}）：\n`;
+    clText += dcItems.map(item => `[${APP_STATE.checklistResults[item.id] ? '✅' : '⬜'}] ${item.text}${item.aiSuggestion ? ` → ${item.aiSuggestion}` : ''}`).join('\n');
+    clText += '\n\n';
+  }
+  if (allItems.length > 0) {
+    clText += 'AI 交叉检查 Checklist：\n';
+    clText += allItems.map(item => `[${APP_STATE.checklistResults[item.id] ? '✅' : '⬜'}] ${item.text}`).join('\n');
+    clText += '\n\n';
+  }
+  if (riItems.length > 0) {
+    const involved = riItems.filter(r => r.involved);
+    const notInvolved = riItems.filter(r => !r.involved);
+    clText += '关联事项确认：\n';
+    if (involved.length > 0) {
+      clText += involved.map(r => `[${APP_STATE.checklistResults[r.id] ? '✅' : '⚠️'}] ${r.label}：${r.suggestion || r.reason}`).join('\n');
+    }
+    if (notInvolved.length > 0) {
+      clText += '\n' + notInvolved.map(r => `[—] ${r.label}：不涉及`).join('\n');
+    }
+  }
+  document.getElementById('p4-checklist-output').innerHTML = `
+    <button class="copy-btn" onclick="copyBlock('p4-checklist-output')">复制</button>
+${clText || '无 checklist 项。'}`;
+
+  // Readers output
+  const scan = APP_STATE.scanResult || {};
+  let readersText = '基于 PRD 内容，建议确保以下读者能获得所需信息：\n· 开发团队：需求细节完整性';
+  readersText += '\n· 业务同事：确保 Sign-off 流程';
+  if ((scan.markets || []).length > 1) readersText += '\n· 翻译团队：多市场涉及多语言';
+  if (findings.some(f => f.authority === '建议与合规确认')) readersText += '\n· 安全/审计：涉及合规相关变更';
+  readersText += '\n· 客服团队：流程变更需更新帮助中心';
+  if (cmFindings.length > 0) readersText += '\n· 关联系统PM：存在跨模块影响，需知会';
+  document.getElementById('p4-readers-output').innerHTML = `
+    <button class="copy-btn" onclick="copyBlock('p4-readers-output')">复制</button>
+${readersText}`;
+}
+
+// ============================================================
+// 工具函数
+// ============================================================
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2500);
+}
+
+function copyBlock(blockId) {
+  const el = document.getElementById(blockId);
+  const text = el.innerText.replace('复制', '').trim();
+  navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板'));
+}
+
+function showApiKeyModal() {
+  document.getElementById('apikey-modal').classList.add('show');
+  document.getElementById('apikey-input').value = getApiKey();
+  document.getElementById('model-select').value = getModel();
+}
+
+function closeApiKeyModal() {
+  document.getElementById('apikey-modal').classList.remove('show');
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apikey-input').value.trim();
+  const model = document.getElementById('model-select').value;
+  if (key) localStorage.setItem('claude_api_key', key);
+  localStorage.setItem('claude_model', model);
+  closeApiKeyModal();
+  showToast('API Key 已保存');
+}
+
+function exportResults() {
+  const domain = APP_STATE.scanResult?.businessDomain || '未知';
+  const markets = (APP_STATE.scanResult?.markets || []).join('/') || '未知';
+  let output = `# /需求共创 工作流输出\n\n`;
+  output += `> 导出时间：${new Date().toLocaleString('zh-CN')}\n`;
+  output += `> 业务域：${domain}　市场：${markets}　分类：${APP_STATE.classification || '未分类'}\n\n---\n\n`;
+
+  const sections = [
+    { id: 'p4-okr-output', title: 'OKR 挂靠' },
+    { id: 'p4-decision-output', title: '决策验证（Phase 0）' },
+    { id: 'p4-suggestions-output', title: '改进建议（Phase 3）' },
+    { id: 'p4-checklist-output', title: 'Checklist 确认' },
+    { id: 'p4-readers-output', title: '读者提醒' },
+  ];
+
+  sections.forEach(s => {
+    const el = document.getElementById(s.id);
+    if (el) {
+      output += `## ${s.title}\n\n`;
+      output += el.innerText.replace('复制', '').trim() + '\n\n---\n\n';
+    }
+  });
+
+  output += `\n> 建议跑 \`/PRD内审\` 做完整 11 维度审查。\n`;
+
+  const blob = new Blob([output], { type: 'text/markdown;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `需求共创-${domain}-${new Date().toISOString().slice(0, 10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('已导出 Markdown 文件');
+}
+
+function resetWorkflow() {
+  if (!confirm('确定要重新开始吗？所有数据将清空。')) return;
+  Object.assign(APP_STATE, {
+    currentPhase: 0,
+    prdText: '',
+    selectedOKR: null,
+    okrContribution: '',
+    q1Answer: '', q2Answer: '', q3Answer: '',
+    healthChecks: {},
+    classification: '',
+    scanResult: null,
+    matchResult: null,
+    crossRefResult: null,
+    checklistResults: {},
+    outputGenerated: false,
+    phaseCompleted: [false, false, false, false, false],
+    aiProcessing: false,
+  });
+  // Reset UI
+  document.getElementById('p0-step-input').style.display = 'block';
+  document.getElementById('p0-step-okr').style.display = 'none';
+  document.getElementById('p0-step-3q').style.display = 'none';
+  document.getElementById('p0-step-health').style.display = 'none';
+  document.getElementById('prd-input').value = '';
+  document.getElementById('btn-export').disabled = true;
+  const startBtn = document.getElementById('btn-start-p0');
+  startBtn.disabled = false;
+  startBtn.innerHTML = '开始分析 →';
+  goToPhase(0);
+}
+
+// ============================================================
+// 初始化
+// ============================================================
+function init() {
+  renderProgressBar();
+  showPhaseContent(0);
+  updateNavStatus();
+  renderOKRList();
+
+  // Check API Key on load
+  if (!getApiKey()) {
+    setTimeout(() => showToast('提示：请先设置 API Key 以启用 AI 功能'), 1000);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
