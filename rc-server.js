@@ -11,8 +11,40 @@ const { spawn } = require('child_process');
 const PORT = 3456;
 const HTML_FILE = path.join(__dirname, 'requirement-cocreation.html');
 
-const CLI_JS = path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@futupb', 'ft-claude-code', 'cli2.js');
-const GIT_BASH = process.env.CLAUDE_CODE_GIT_BASH_PATH || 'D:\\Git\\bin\\bash.exe';
+// 自动探测 CLI 路径
+function findCLI() {
+  const candidates = [
+    path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@futupb', 'ft-claude-code', 'cli2.js'),
+    path.join(process.env.APPDATA || '', 'npm', 'node_modules', '@anthropic-ai', 'claude-code', 'cli.js'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return null;
+}
+
+function findGitBash() {
+  if (process.env.CLAUDE_CODE_GIT_BASH_PATH && fs.existsSync(process.env.CLAUDE_CODE_GIT_BASH_PATH)) {
+    return process.env.CLAUDE_CODE_GIT_BASH_PATH;
+  }
+  const candidates = ['D:\\Git\\bin\\bash.exe', 'C:\\Program Files\\Git\\bin\\bash.exe', 'C:\\Git\\bin\\bash.exe'];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) return p;
+  }
+  return 'bash'; // fallback to PATH
+}
+
+const CLI_JS = findCLI();
+const GIT_BASH = findGitBash();
+
+if (!CLI_JS) {
+  console.error('\n  ❌ 找不到 Claude Code CLI。请确认已安装：');
+  console.error('     npm install -g @futupb/ft-claude-code');
+  console.error('     或 npm install -g @anthropic-ai/claude-code\n');
+  process.exit(1);
+}
+console.log(`  📍 CLI: ${CLI_JS}`);
+console.log(`  📍 Git Bash: ${GIT_BASH}`);
 
 const server = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -55,6 +87,9 @@ const server = http.createServer((req, res) => {
           : (userMessage || '');
 
         const env = { ...process.env, CLAUDE_CODE_GIT_BASH_PATH: GIT_BASH };
+        const reqStart = Date.now();
+        console.log(`[${new Date().toLocaleTimeString()}] API call: model=${model || 'default'}, prompt=${stdinContent.length} chars`);
+
         const proc = spawn('node', args, {
           env,
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -68,16 +103,21 @@ const server = http.createServer((req, res) => {
         proc.stdout.on('data', d => stdout += d);
         proc.stderr.on('data', d => stderr += d);
 
+        const TIMEOUT_MS = 300000; // 5 minutes
         const timer = setTimeout(() => {
           proc.kill();
+          const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1);
+          console.log(`[${new Date().toLocaleTimeString()}] TIMEOUT after ${elapsed}s`);
           if (!res.headersSent) {
             res.writeHead(504, { 'Content-Type': 'application/json; charset=utf-8' });
-            res.end(JSON.stringify({ error: '请求超时（120s）' }));
+            res.end(JSON.stringify({ error: `请求超时（${elapsed}s）` }));
           }
-        }, 120000);
+        }, TIMEOUT_MS);
 
         proc.on('close', code => {
           clearTimeout(timer);
+          const elapsed = ((Date.now() - reqStart) / 1000).toFixed(1);
+          console.log(`[${new Date().toLocaleTimeString()}] Done in ${elapsed}s, code=${code}, output=${stdout.length} chars`);
           if (res.headersSent) return;
           if (code !== 0) {
             res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });

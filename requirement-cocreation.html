@@ -612,14 +612,31 @@ label {
         </div>
       </div>
 
-      <!-- Step 0-2: AI Analysis + OKR -->
+      <!-- Step 0-loading: 分析中 -->
+      <div id="p0-step-loading" style="display:none">
+        <div class="card" style="text-align:center;padding:48px 24px">
+          <div class="spinner" style="width:36px;height:36px;margin:0 auto 16px"></div>
+          <div style="font-size:16px;font-weight:600;margin-bottom:8px">AI 正在分析 PRD...</div>
+          <div style="color:#6b7280;font-size:14px">识别业务域、对齐 OKR、验证三问法、检测决策陷阱</div>
+          <div id="p0-loading-timer" style="color:#9ca3af;font-size:13px;margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- Step 0-summary: 总体评价（AI 完成后显示） -->
+      <div id="p0-step-summary" style="display:none">
+        <div class="card" id="p0-overall-eval"></div>
+      </div>
+
+      <!-- Step 0-2: OKR 对齐 -->
       <div id="p0-step-okr" style="display:none">
         <div id="p0-ai-analysis"></div>
-
         <div class="card">
           <div class="card-header">📌 OKR 对齐</div>
-          <div class="section-desc">选择你的需求主要挂钩的业务目标（Objective）和关键结果（Key Result）：</div>
-          <div id="okr-list"></div>
+          <div id="okr-selected"></div>
+          <div id="okr-list" style="display:none"></div>
+          <div style="margin-top:8px">
+            <button class="btn btn-sm" onclick="toggleOKRList()" id="btn-toggle-okr" style="font-size:12px;color:var(--gray-500)">更换 OKR...</button>
+          </div>
           <div class="form-group" style="margin-top:12px">
             <label>本需求预期贡献（选填）</label>
             <input type="text" id="okr-contribution" placeholder="例如：XX审核耗时从Y降至Z">
@@ -631,36 +648,34 @@ label {
       <div id="p0-step-3q" style="display:none">
         <div class="card">
           <div class="card-header">🔍 三问法验证</div>
+          <div class="section-desc" style="margin-bottom:12px">AI 已基于 PRD 内容预填，请审阅并修改：</div>
           <div id="p0-3q-ai-prefill"></div>
           <div class="form-group">
-            <label>Q1 根目的：为什么做这件事？和哪个业务指标挂钩？</label>
-            <textarea id="q1-answer" rows="3" placeholder="AI 将基于 PRD 内容给出预填建议..."></textarea>
+            <label>Q1 根目的：为什么做？挂钩哪个指标？</label>
+            <textarea id="q1-answer" rows="3" placeholder="AI 预填中..."></textarea>
           </div>
           <div class="form-group">
-            <label>Q2 目标客群+问题：给谁用？解决什么问题？有数据支撑吗？</label>
-            <textarea id="q2-answer" rows="3" placeholder="AI 将基于 PRD 内容给出预填建议..."></textarea>
+            <label>Q2 客群+问题：给谁用？解决什么？数据支撑？</label>
+            <textarea id="q2-answer" rows="3" placeholder="AI 预填中..."></textarea>
           </div>
           <div class="form-group">
-            <label>Q3 ROI：投入多少资源？预期回报是什么？值不值得做？</label>
-            <textarea id="q3-answer" rows="3" placeholder="AI 将基于 PRD 内容给出预填建议..."></textarea>
+            <label>Q3 ROI：投入多少？预期回报？值不值？</label>
+            <textarea id="q3-answer" rows="3" placeholder="AI 预填中..."></textarea>
           </div>
         </div>
       </div>
 
-      <!-- Step 0-4: 六不要 + 三看 -->
+      <!-- Step 0-4: 健康度（仅显示有问题的项） -->
       <div id="p0-step-health" style="display:none">
-        <div class="card">
-          <div class="card-header">⚠️ 决策健康度检查</div>
-          <div class="section-desc">六不要：识别常见决策陷阱</div>
-          <div id="p0-dont-list"></div>
+        <div id="p0-health-flagged"></div>
+        <div id="p0-health-all" style="display:none">
+          <div class="card">
+            <div class="card-header">六不要：决策陷阱清单</div>
+            <div id="p0-dont-list"></div>
+          </div>
         </div>
-        <div class="card">
-          <div class="card-header">👀 三看：决策视角补充</div>
-          <div id="p0-look-list"></div>
-        </div>
-        <div class="card">
-          <div class="card-header">📋 需求分类</div>
-          <div id="p0-classification"></div>
+        <div style="text-align:center;margin-top:8px">
+          <button class="btn btn-sm" onclick="toggleHealthAll()" id="btn-toggle-health" style="font-size:12px;color:var(--gray-500)">查看完整检查清单...</button>
         </div>
       </div>
     </div>
@@ -801,10 +816,8 @@ label {
     <div class="phase-content" id="phase-0-ref">
       <div class="ref-section">
         <div class="ref-title">📚 方法论参考</div>
-        <div class="ref-item"><strong>三问法</strong>：Q1 根目的 → Q2 客群+问题 → Q3 ROI</div>
-        <div class="ref-item"><strong>六不要</strong>：感觉不错就做 / 看到别人做就跟 / 想做就做 / 被动接需求 / 想当然 / 不看数据</div>
-        <div class="ref-item"><strong>三看</strong>：看宏观（行业趋势）/ 看竞争（同类方案）/ 看用户（用户研究）</div>
-        <div class="ref-item"><strong>需求分类</strong>：简单（单一问题→单一方案）/ 常规（单一问题→多方案）/ 复杂（宽泛问题→需拆解）</div>
+        <div class="ref-item" style="background:#eff6ff;padding:8px 12px;border-radius:6px;border-left:3px solid var(--primary);margin-bottom:8px"><strong>三问法</strong>：Q1 根目的 → Q2 客群+问题 → Q3 ROI</div>
+        <div class="ref-item" style="background:#fef2f2;padding:8px 12px;border-radius:6px;border-left:3px solid var(--danger);margin-bottom:8px"><strong>六不要</strong>：感觉不错就做 / 看到别人做就跟 / 想做就做 / 被动接需求 / 想当然 / 不看数据</div>
       </div>
       <div class="ref-section">
         <div class="ref-title">📌 OKR 数据</div>
@@ -970,7 +983,7 @@ const PHASES = [
 // ============================================================
 const OKR_DATA = [
   {
-    module: '账户管理',
+    module: '账户合规',
     objectives: [
       {
         o: '提升账户/品类的激活率',
@@ -984,11 +997,6 @@ const OKR_DATA = [
         o: '补齐账户管理的功能能力',
         krs: [],
       },
-    ],
-  },
-  {
-    module: '合规业务',
-    objectives: [
       {
         o: '提高合规系统营运人效',
         krs: ['降低供应商采买成本'],
@@ -1001,11 +1009,6 @@ const OKR_DATA = [
         o: '降低合规场景系统风险',
         krs: [],
       },
-    ],
-  },
-  {
-    module: '登录注册',
-    objectives: [
       {
         o: '增强登录场景的安全验证因子',
         krs: [],
@@ -1016,10 +1019,44 @@ const OKR_DATA = [
       },
     ],
   },
+  {
+    module: '开户',
+    objectives: [
+      {
+        o: '提升开户转化率',
+        krs: [],
+      },
+      {
+        o: '提高开户审核效率',
+        krs: [],
+      },
+      {
+        o: '降低开户流程合规风险',
+        krs: [],
+      },
+    ],
+  },
+  {
+    module: '资金',
+    objectives: [
+      {
+        o: '提升出入金成功率',
+        krs: [],
+      },
+      {
+        o: '提高资金业务营运人效',
+        krs: [],
+      },
+      {
+        o: '降低资金业务系统风险',
+        krs: [],
+      },
+    ],
+  },
 ];
 
 // ============================================================
-// 六不要 & 三看 数据
+// 六不要数据
 // ============================================================
 const DONT_LIST = [
   { id: 'N1', label: '感觉不错就做', desc: '只有主观判断，无数据支撑' },
@@ -1028,12 +1065,6 @@ const DONT_LIST = [
   { id: 'N4', label: '被动接需求', desc: '需求来源单一且未验证' },
   { id: 'N5', label: '想当然', desc: '假设未经验证' },
   { id: 'N6', label: '不看数据', desc: '没有任何量化信息' },
-];
-
-const LOOK_LIST = [
-  { id: 'L1', label: '看宏观', desc: '行业趋势、监管方向是否考虑' },
-  { id: 'L2', label: '看竞争', desc: '同类方案是否了解' },
-  { id: 'L3', label: '看用户', desc: '用户需求是否经过研究' },
 ];
 
 // ============================================================
@@ -1228,9 +1259,14 @@ async function callClaude(systemPrompt, userMessage) {
       const data = await resp.json();
       return data.text || '';
     } catch (proxyErr) {
-      // 代理也不通 → 提示用户
-      showToast('未设置 API Key 且本地代理未运行。请设置 API Key 或启动 node rc-server.js');
-      showApiKeyModal();
+      // 代理不通 → 区分原因
+      const isNetworkError = proxyErr.message?.includes('Failed to fetch') || proxyErr.name === 'TypeError';
+      if (isNetworkError) {
+        showToast('本地代理未运行。请在终端执行: node rc-server.js，然后访问 localhost:3456');
+      } else {
+        showToast('代理调用失败: ' + proxyErr.message);
+      }
+      console.error('Proxy error:', proxyErr);
       return null;
     }
   } catch (e) {
@@ -1340,10 +1376,7 @@ function nextPhase() {
       showToast('请至少填写 Q1 根目的');
       return;
     }
-    if (!APP_STATE.classification) {
-      showToast('请选择需求分类（简单/常规/复杂）');
-      return;
-    }
+    // classification is now auto-set by AI, no manual validation needed
   }
   // Mark current as completed
   APP_STATE.phaseCompleted[APP_STATE.currentPhase] = true;
@@ -1370,41 +1403,102 @@ async function onPhaseEnter(phaseId) {
 // Phase 0: 需求决策验证
 // ============================================================
 function renderOKRList() {
+  const selectedEl = document.getElementById('okr-selected');
   const container = document.getElementById('okr-list');
   const refContainer = document.getElementById('ref-okr-display');
   container.innerHTML = '';
   refContainer.innerHTML = '';
 
+  // 找到 AI 推荐的 OKR
+  let selectedObj = null;
+  let selectedModule = null;
+
   OKR_DATA.forEach(module => {
-    module.objectives.forEach((obj, oi) => {
+    module.objectives.forEach(obj => {
       const key = `${module.module}::${obj.o}`;
+      if (APP_STATE.selectedOKR === key) {
+        selectedObj = obj;
+        selectedModule = module.module;
+      }
+
+      // 完整列表（折叠区域）
       const card = document.createElement('div');
       card.className = 'okr-card' + (APP_STATE.selectedOKR === key ? ' selected' : '');
       card.onclick = () => {
         APP_STATE.selectedOKR = key;
         renderOKRList();
+        document.getElementById('okr-list').style.display = 'none';
+        document.getElementById('btn-toggle-okr').textContent = '更换 OKR...';
       };
-
-      let html = `<div class="okr-objective">📌 [${module.module}] ${obj.o}</div>`;
-      obj.krs.forEach(kr => {
-        html += `<div class="okr-kr">⭐ ${kr}</div>`;
-      });
-      if (obj.krs.length === 0) {
-        html += `<div class="okr-kr" style="color:var(--gray-400)">（待补充 KR）</div>`;
-      }
+      let html = `<div class="okr-objective">[${module.module}] ${obj.o}</div>`;
+      obj.krs.forEach(kr => { html += `<div class="okr-kr">${kr}</div>`; });
       card.innerHTML = html;
       container.appendChild(card);
 
-      // Also render in reference panel
+      // Reference panel
       const refItem = document.createElement('div');
       refItem.className = 'ref-item';
       refItem.innerHTML = `<strong>${module.module}</strong>：${obj.o}`;
       refContainer.appendChild(refItem);
     });
   });
+
+  // 高亮选中项
+  if (selectedObj && selectedModule) {
+    selectedEl.innerHTML = `
+      <div class="okr-card selected" style="margin-bottom:0">
+        <div class="okr-objective">[${selectedModule}] ${selectedObj.o}</div>
+        ${selectedObj.krs.map(kr => `<div class="okr-kr">${kr}</div>`).join('')}
+      </div>
+    `;
+  } else {
+    selectedEl.innerHTML = `<div style="color:var(--gray-400);font-size:13px;padding:8px 0">AI 未匹配到 OKR，请手动选择</div>`;
+    document.getElementById('okr-list').style.display = 'block';
+  }
+}
+
+function toggleOKRList() {
+  const list = document.getElementById('okr-list');
+  const btn = document.getElementById('btn-toggle-okr');
+  if (list.style.display === 'none') {
+    list.style.display = 'block';
+    btn.textContent = '收起 OKR 列表';
+  } else {
+    list.style.display = 'none';
+    btn.textContent = '更换 OKR...';
+  }
 }
 
 function renderHealthChecks() {
+  // 只检查六不要
+  const flaggedDonts = DONT_LIST.filter(d => APP_STATE.healthChecks[d.id]);
+
+  // 已标记项目 — 顶部高亮显示
+  const flaggedEl = document.getElementById('p0-health-flagged');
+  if (flaggedDonts.length > 0) {
+    flaggedEl.innerHTML = `
+      <div class="card" style="border-color:#fca5a5;background:#fef2f2">
+        <div class="card-header" style="color:var(--danger)">AI 检测到的决策陷阱</div>
+        ${flaggedDonts.map(item => `
+          <div class="checklist-item checked" style="background:white;margin-bottom:4px">
+            <input type="checkbox" checked onchange="APP_STATE.healthChecks['${item.id}'] = this.checked; renderHealthChecks()">
+            <div class="checklist-label">
+              <strong style="color:var(--danger)">${item.id} ${item.label}</strong>
+              <div style="font-size:12px;color:var(--gray-500)">${item.desc}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  } else {
+    flaggedEl.innerHTML = `
+      <div style="text-align:center;padding:16px;color:var(--success);font-size:14px;font-weight:500">
+        \u2705 未检测到决策陷阱
+      </div>
+    `;
+  }
+
+  // 完整六不要清单（折叠区域）
   const dontContainer = document.getElementById('p0-dont-list');
   dontContainer.innerHTML = '';
   DONT_LIST.forEach(item => {
@@ -1412,7 +1506,7 @@ function renderHealthChecks() {
     el.className = 'checklist-item' + (APP_STATE.healthChecks[item.id] ? ' checked' : '');
     el.innerHTML = `
       <input type="checkbox" ${APP_STATE.healthChecks[item.id] ? 'checked' : ''}
-        onchange="APP_STATE.healthChecks['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
+        onchange="APP_STATE.healthChecks['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked'); renderHealthChecks()">
       <div class="checklist-label">
         <strong>${item.id} ${item.label}</strong>
         <div style="font-size:12px;color:var(--gray-500)">${item.desc}</div>
@@ -1420,37 +1514,45 @@ function renderHealthChecks() {
     `;
     dontContainer.appendChild(el);
   });
+}
 
-  const lookContainer = document.getElementById('p0-look-list');
-  lookContainer.innerHTML = '';
-  LOOK_LIST.forEach(item => {
-    const el = document.createElement('div');
-    el.className = 'checklist-item' + (APP_STATE.healthChecks[item.id] ? ' checked' : '');
-    el.innerHTML = `
-      <input type="checkbox" ${APP_STATE.healthChecks[item.id] ? 'checked' : ''}
-        onchange="APP_STATE.healthChecks['${item.id}'] = this.checked; this.closest('.checklist-item').classList.toggle('checked')">
-      <div class="checklist-label">
-        <strong>${item.id} ${item.label}</strong>
-        <div style="font-size:12px;color:var(--gray-500)">${item.desc}</div>
-      </div>
-    `;
-    lookContainer.appendChild(el);
-  });
+function editTag(el, field) {
+  if (field === 'markets') {
+    const allMarkets = ['HK','US','JP','SG','MY','AU','CA'];
+    const current = APP_STATE.scanResult?.markets || [];
+    const val = prompt('输入适用市场（逗号分隔）：\n可选：' + allMarkets.join(', ') + '\n当前：' + (current.join(', ') || '无'), current.join(', '));
+    if (val !== null) {
+      const markets = val.split(/[,，\s]+/).map(s => s.trim().toUpperCase()).filter(Boolean);
+      if (APP_STATE.scanResult) APP_STATE.scanResult.markets = markets;
+      // 刷新标签区域
+      const tagContainer = el.parentElement;
+      tagContainer.querySelectorAll('.tag-green').forEach(t => t.remove());
+      markets.forEach(m => {
+        const tag = document.createElement('span');
+        tag.className = 'tag tag-green';
+        tag.textContent = m;
+        tagContainer.insertBefore(tag, el);
+      });
+    }
+  } else if (field === 'businessDomain') {
+    const val = prompt('修改业务域：', el.textContent);
+    if (val !== null && val.trim()) {
+      el.textContent = val.trim();
+      if (APP_STATE.scanResult) APP_STATE.scanResult.businessDomain = val.trim();
+    }
+  }
+}
 
-  // Classification placeholder
-  document.getElementById('p0-classification').innerHTML = `
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-sm ${APP_STATE.classification === 'simple' ? 'btn-primary' : ''}"
-        onclick="setClassification('simple')">简单需求</button>
-      <button class="btn btn-sm ${APP_STATE.classification === 'normal' ? 'btn-primary' : ''}"
-        onclick="setClassification('normal')">常规需求</button>
-      <button class="btn btn-sm ${APP_STATE.classification === 'complex' ? 'btn-primary' : ''}"
-        onclick="setClassification('complex')">复杂需求</button>
-    </div>
-    <div class="form-hint" style="margin-top:8px">
-      简单：单一问题→单一方案 ｜ 常规：单一问题→多方案 ｜ 复杂：宽泛问题→需拆解
-    </div>
-  `;
+function toggleHealthAll() {
+  const el = document.getElementById('p0-health-all');
+  const btn = document.getElementById('btn-toggle-health');
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    btn.textContent = '收起完整清单';
+  } else {
+    el.style.display = 'none';
+    btn.textContent = '查看完整检查清单...';
+  }
 }
 
 function setClassification(type) {
@@ -1466,180 +1568,204 @@ async function startPhase0() {
   }
   APP_STATE.prdText = prdText;
 
-  // Disable button to prevent double-click
+  // Disable button
   const startBtn = document.getElementById('btn-start-p0');
   startBtn.disabled = true;
   startBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px"></span> 分析中...';
 
-  // Show OKR step
+  // 只显示 loading，隐藏其他所有 step
   document.getElementById('p0-step-input').style.display = 'none';
-  document.getElementById('p0-step-okr').style.display = 'block';
-  document.getElementById('p0-step-3q').style.display = 'block';
-  document.getElementById('p0-step-health').style.display = 'block';
+  document.getElementById('p0-step-loading').style.display = 'block';
+  document.getElementById('p0-step-summary').style.display = 'none';
+  document.getElementById('p0-step-okr').style.display = 'none';
+  document.getElementById('p0-step-3q').style.display = 'none';
+  document.getElementById('p0-step-health').style.display = 'none';
 
-  renderOKRList();
-  renderHealthChecks();
+  // 计时器
+  const timerEl = document.getElementById('p0-loading-timer');
+  const startTime = Date.now();
+  const timerInterval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    timerEl.textContent = `已等待 ${elapsed}s...`;
+  }, 1000);
 
-  // Call AI to analyze PRD and suggest OKR + prefill 三问法
-  const analysisEl = document.getElementById('p0-ai-analysis');
-  analysisEl.innerHTML = '<div class="ai-thinking"><span class="spinner"></span>AI 正在分析 PRD 内容，识别业务域与 OKR 对齐建议...</div>';
-
-  // Build drive type descriptions for prompt
+  // Build prompt
   const variantDesc = Object.entries(THREE_Q_VARIANTS).map(([k, v]) =>
     `- ${v.label}(${k}): Q1侧重"${v.q1Focus}", Q2侧重"${v.q2Focus}", Q3侧重"${v.q3Focus}"`
   ).join('\n');
 
-  const systemPrompt = `你是一位资深券商柜台业务PM的需求共创助手。你的任务是分析PRD内容，完成以下工作：
+  const systemPrompt = `你是一位资深券商柜台业务PM的需求决策验证助手。你的唯一任务是判断"这个需求做得对不对"。
 
-1. 识别PRD涉及的业务域（开户/资金/合规/账户管理/登录注册）
-2. 识别适用市场（HK/JP/SG/MY/AU/CA/US）
-3. 基于业务域，建议最匹配的OKR（从以下OKR数据中选择）
-4. 判断需求驱动类型（用户反馈/业务项目/老板需求/数据分析），并按对应三问法变体预填
-5. 预填三问法（Q1根目的/Q2客群+问题/Q3 ROI），内容要具体、可操作，不能空泛
-6. 检测六不要中的潜在陷阱——逐一扫描PRD §1背景，检测是否踩中N1-N6
-7. 检测三看视角是否充分——PRD是否缺少宏观/竞争/用户视角
-8. 建议需求分类（简单/常规/复杂）
+**决策验证步骤：**
+1. 识别业务域（账户合规/开户/资金）和适用市场（HK/JP/SG/MY/AU/CA/US）
+2. 匹配最相关的OKR目标
+3. 判断驱动类型并预填三问法（Q1根目的/Q2客群+问题/Q3 ROI）——必须具体、引用PRD内容
+4. 检测六不要陷阱——只在有PRD证据时才报警
+5. 给出需求分类和总结
 
-三问法四种变体：
+三问法变体：
 ${variantDesc}
 
-OKR数据：
-${JSON.stringify(OKR_DATA, null, 2)}
+OKR：
+${OKR_DATA.map(m => m.objectives.map(o => `- ${m.module}::${o.o}${o.krs.length ? ' [' + o.krs.join('; ') + ']' : ''}`).join('\n')).join('\n')}
 
-六不要信号：
+六不要：
 ${DONT_LIST.map(d => `${d.id} ${d.label}: ${d.desc}`).join('\n')}
 
-三看视角：
-${LOOK_LIST.map(l => `${l.id} ${l.label}: ${l.desc}`).join('\n')}
+严格输出JSON（无markdown包裹）：
+{"businessDomain":"","markets":[],"suggestedOKR":"模块::O名称","okrReason":"","driveType":"userFeedback|bizProject|bossRequest|dataAnalysis","driveTypeReason":"","q1Prefill":"","q2Prefill":"","q3Prefill":"","dontWarnings":[{"id":"","warning":""}],"classification":"simple|normal|complex","classificationReason":"","summary":""}`;
 
-分析原则：
-- Q1/Q2/Q3 的预填必须基于PRD实际内容，引用具体段落或数据
-- 六不要检测时，对每个N项给出PRD中的具体证据，没有证据则不报警
-- 三看检测时，缺哪个视角就指出来，并给出具体补充方向
-- 需求分类依据：简单（单一问题→单一方案）、常规（单一问题→多可选方案）、复杂（宽泛/多层问题→需先拆解）
+  const result = await callClaude(systemPrompt, `以下是PRD内容：\n\n${prdText.substring(0, 8000)}`);
 
-输出格式严格为JSON：
-{
-  "businessDomain": "识别的业务域",
-  "markets": ["市场列表"],
-  "suggestedOKR": "模块::O名称",
-  "okrReason": "推荐理由（引用PRD内容说明为什么匹配）",
-  "driveType": "userFeedback|bizProject|bossRequest|dataAnalysis",
-  "driveTypeReason": "判断依据",
-  "q1Prefill": "Q1预填（具体、引用PRD内容、指向明确指标）",
-  "q2Prefill": "Q2预填（明确用户群体+问题描述+数据佐证）",
-  "q3Prefill": "Q3预填（投入估算+回报预期，即使PRD中缺失也要指出缺什么）",
-  "dontWarnings": [{"id": "N1-N6", "warning": "具体警告，引用PRD证据"}],
-  "lookSuggestions": [{"id": "L1-L3", "suggestion": "缺失视角的具体补充建议"}],
-  "classification": "simple|normal|complex",
-  "classificationReason": "分类理由",
-  "summary": "一段话总结：业务域+市场+OKR对齐+三问法评估+决策健康度+分类结论"
-}
-
-只输出JSON，不要输出其他内容。`;
-
-  const result = await callClaude(systemPrompt, `以下是PRD内容（前3000字）：\n\n${prdText.substring(0, 3000)}`);
+  // 停止计时
+  clearInterval(timerInterval);
+  document.getElementById('p0-step-loading').style.display = 'none';
 
   if (result) {
     try {
-      // Try to extract JSON from the response
       const jsonMatch = result.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const analysis = JSON.parse(jsonMatch[0]);
 
-        // Display summary with drive type
+        // --- 1. 总体评价卡片 ---
         const dtLabel = THREE_Q_VARIANTS[analysis.driveType]?.label || '未识别';
-        analysisEl.innerHTML = `
-          <div class="ai-response">
-            <div class="ai-response-header">🤖 AI 分析结果</div>
-            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">
-              <span class="tag tag-blue">${analysis.businessDomain || '未识别'}</span>
-              ${(analysis.markets || []).map(m => `<span class="tag tag-green">${m}</span>`).join('')}
-              <span class="tag tag-yellow">${analysis.classification || '常规'}需求</span>
-            </div>
-            <strong>驱动类型</strong>：${dtLabel}${analysis.driveTypeReason ? ` — ${analysis.driveTypeReason}` : ''}
-            <strong>需求分类</strong>：${analysis.classificationReason || ''}
+        const dontCount = (analysis.dontWarnings || []).length;
+        const healthLevel = dontCount === 0 ? { icon: '\u{1F7E2}', label: '健康', color: 'var(--success)', bg: '#f0fdf4' }
+          : dontCount <= 2 ? { icon: '\u{1F7E1}', label: '需关注', color: 'var(--warning)', bg: '#fffbeb' }
+          : { icon: '\u{1F534}', label: '高风险', color: 'var(--danger)', bg: '#fef2f2' };
 
-${analysis.summary || ''}
+        const evalEl = document.getElementById('p0-overall-eval');
+        evalEl.style.borderLeft = `4px solid ${healthLevel.color}`;
+        evalEl.style.background = healthLevel.bg;
+        evalEl.style.padding = '0';
+        evalEl.innerHTML = `
+          <!-- 顶部大标题 -->
+          <div style="padding:20px 24px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+            <div style="font-size:18px;font-weight:700;color:var(--gray-800)">${healthLevel.icon} 决策验证：${healthLevel.label}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+              <span class="tag tag-blue" title="点击修改" style="cursor:pointer" onclick="editTag(this,'businessDomain')">${analysis.businessDomain || '未识别'}</span>
+              ${(analysis.markets || []).map(m => `<span class="tag tag-green">${m}</span>`).join('')}
+              <span class="tag" style="background:#e0e7ff;color:#3730a3;cursor:pointer" title="点击修改" onclick="editTag(this,'markets')">\u002B 市场</span>
+              <span class="tag tag-yellow">${{simple:'简单',normal:'常规',complex:'复杂'}[analysis.classification] || '常规'}需求</span>
+              <span class="tag" style="background:#e0e7ff;color:#3730a3">${dtLabel}</span>
+            </div>
+          </div>
+
+          <!-- 指标网格 -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:#e5e7eb">
+            <div style="background:white;padding:16px 20px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:6px">OKR 对齐</div>
+              <div style="font-size:14px;font-weight:600;color:var(--gray-800);margin-bottom:4px">${analysis.suggestedOKR || '未匹配'}</div>
+              <div style="font-size:12px;color:var(--gray-500);line-height:1.5">${analysis.okrReason || ''}</div>
+            </div>
+            <div style="background:white;padding:16px 20px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:6px">驱动类型</div>
+              <div style="font-size:14px;font-weight:600;color:var(--gray-800);margin-bottom:4px">${dtLabel}</div>
+              <div style="font-size:12px;color:var(--gray-500);line-height:1.5">${analysis.driveTypeReason || ''}</div>
+            </div>
+            <div style="background:white;padding:16px 20px">
+              <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.5px;color:var(--gray-400);margin-bottom:6px">需求分类</div>
+              <div style="font-size:14px;font-weight:600;color:var(--gray-800);margin-bottom:4px">${{simple:'简单',normal:'常规',complex:'复杂'}[analysis.classification] || '常规'}需求</div>
+              <div style="font-size:12px;color:var(--gray-500);line-height:1.5">${analysis.classificationReason || ''}</div>
+            </div>
+          </div>
+
+          <!-- 风险指标条 -->
+          ${dontCount > 0 ? `
+          <div style="display:flex;gap:16px;padding:12px 20px;background:white;border-top:1px solid #e5e7eb;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px">
+              <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--danger)"></span>
+              <span style="font-size:13px;color:var(--danger);font-weight:500">决策陷阱 ${dontCount} 项</span>
+            </div>
+          </div>` : ''}
+
+          <!-- 总结 -->
+          <div style="padding:16px 20px;background:white;border-top:1px solid #e5e7eb;font-size:14px;line-height:1.7;color:var(--gray-700)">
+            ${analysis.summary || ''}
           </div>
         `;
 
-        // Select suggested OKR
+        // --- 2. 填充 OKR ---
         if (analysis.suggestedOKR) {
           APP_STATE.selectedOKR = analysis.suggestedOKR;
-          renderOKRList();
         }
+        renderOKRList();
 
-        // Prefill 三问法
+        // --- 3. 预填三问法 ---
         if (analysis.q1Prefill) document.getElementById('q1-answer').value = analysis.q1Prefill;
         if (analysis.q2Prefill) document.getElementById('q2-answer').value = analysis.q2Prefill;
         if (analysis.q3Prefill) document.getElementById('q3-answer').value = analysis.q3Prefill;
 
-        // Show AI warnings for 六不要
+        // 六不要提示放到三问法区域
         const prefillEl = document.getElementById('p0-3q-ai-prefill');
-        if (analysis.dontWarnings?.length > 0) {
-          prefillEl.innerHTML = `
-            <div class="ai-response" style="margin-bottom:16px">
-              <div class="ai-response-header">⚠️ AI 检测到的决策陷阱信号</div>
-              ${analysis.dontWarnings.map(w => `<div>• <strong>${w.id}</strong>：${w.warning}</div>`).join('\n')}
+        let prefillHtml = '';
+        if (dontCount > 0) {
+          prefillHtml += `
+            <div style="margin-bottom:16px;border:1px solid #fca5a5;border-radius:var(--radius);overflow:hidden">
+              <div style="background:#fef2f2;padding:10px 16px;font-size:13px;font-weight:600;color:var(--danger);border-bottom:1px solid #fca5a5">
+                \u26A0\uFE0F 决策陷阱检测（${dontCount} 项）
+              </div>
+              ${analysis.dontWarnings.map(w => `
+                <div style="padding:10px 16px;border-bottom:1px solid #fee2e2;display:flex;gap:10px;align-items:flex-start">
+                  <span style="flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:28px;height:20px;background:var(--danger);color:white;border-radius:4px;font-size:11px;font-weight:600">${w.id}</span>
+                  <span style="font-size:13px;line-height:1.5;color:var(--gray-700)">${w.warning}</span>
+                </div>
+              `).join('')}
             </div>
           `;
-          // Auto-check detected warnings
-          analysis.dontWarnings.forEach(w => {
-            APP_STATE.healthChecks[w.id] = true;
-          });
-          renderHealthChecks();
+          analysis.dontWarnings.forEach(w => { APP_STATE.healthChecks[w.id] = true; });
         }
+        prefillEl.innerHTML = prefillHtml;
 
-        // Show 三看 suggestions
-        if (analysis.lookSuggestions?.length > 0) {
-          const lookEl = document.getElementById('p0-3q-ai-prefill');
-          lookEl.innerHTML += `
-            <div class="ai-response" style="margin-bottom:16px;border-color:#93c5fd;background:#eff6ff">
-              <div class="ai-response-header" style="color:var(--primary)">👁️ 三看视角补充建议</div>
-              ${analysis.lookSuggestions.map(l => `<div>• <strong>${l.id}</strong>：${l.suggestion}</div>`).join('\n')}
-            </div>
-          `;
-        }
-
-        // Set classification
+        // --- 4. 健康度 ---
         if (analysis.classification) {
           APP_STATE.classification = analysis.classification;
-          renderHealthChecks();
         }
+        renderHealthChecks();
 
-        // Store scan-like data for later phases
+        // --- 5. 存储 + 一次性展示所有区域 ---
         APP_STATE.scanResult = analysis;
+        document.getElementById('p0-ai-analysis').innerHTML = ''; // 已移至总体评价
+        document.getElementById('p0-step-summary').style.display = 'block';
+        document.getElementById('p0-step-okr').style.display = 'block';
+        document.getElementById('p0-step-3q').style.display = 'block';
+        document.getElementById('p0-step-health').style.display = 'block';
+
+      } else {
+        // JSON 解析失败，显示原始结果
+        showP0Error('AI 返回了非 JSON 格式的内容，请重试');
+        console.error('Non-JSON response:', result);
       }
     } catch (e) {
-      analysisEl.innerHTML = `
-        <div class="ai-response">
-          <div class="ai-response-header">🤖 AI 分析结果</div>
-          ${result}
-        </div>
-      `;
+      showP0Error('AI 返回结果解析失败: ' + e.message);
+      console.error('Parse error:', e, result);
     }
   } else {
-    analysisEl.innerHTML = `
-      <div class="ai-response" style="border-color:#fca5a5;background:#fef2f2">
-        <div class="ai-response-header" style="color:var(--danger)">❌ AI 分析失败</div>
-        请检查 API Key 设置，或手动完成本阶段。
-      </div>
-    `;
+    showP0Error('AI 分析超时或调用失败，请重试。如持续失败请检查终端 rc-server.js 日志');
   }
 
   // Re-enable button
-  const startBtn2 = document.getElementById('btn-start-p0');
-  startBtn2.disabled = false;
-  startBtn2.innerHTML = '重新分析 ↻';
+  startBtn.disabled = false;
+  startBtn.innerHTML = '重新分析 \u21BB';
+}
+
+function showP0Error(msg) {
+  document.getElementById('p0-step-loading').style.display = 'none';
+  document.getElementById('p0-step-input').style.display = 'block';
+  const analysisEl = document.getElementById('p0-ai-analysis');
+  analysisEl.innerHTML = `
+    <div class="ai-response" style="border-color:#fca5a5;background:#fef2f2;margin-bottom:16px">
+      <div class="ai-response-header" style="color:var(--danger)">\u274C ${msg}</div>
+    </div>
+  `;
 }
 
 // ============================================================
 // Phase 1: 扫描识别
 // ============================================================
 async function runPhase1() {
-  if (APP_STATE.scanResult?.businessDomain) {
-    // Already have scan data from Phase 0
+  if (APP_STATE.scanResult?.entities) {
+    // Already have scan data
     renderPhase1Results();
     return;
   }
@@ -1657,7 +1783,7 @@ ${componentHints}
 
 输出JSON：
 {
-  "businessDomain": "业务域（开户/资金/合规/账户管理/登录注册）",
+  "businessDomain": "业务域（账户合规/开户/资金）",
   "markets": ["适用市场：HK/JP/SG/MY/AU/CA/US"],
   "entities": ["核心业务实体名称（如：客户资料/尽调案件/交易记录等）"],
   "processes": ["涉及的业务流程（如：开户审核流程/KYC流程等）"],
@@ -1673,7 +1799,7 @@ ${componentHints}
 }
 只输出JSON。`;
 
-  const result = await callClaude(systemPrompt, APP_STATE.prdText.substring(0, 4000));
+  const result = await callClaude(systemPrompt, APP_STATE.prdText.substring(0, 8000));
   if (result) {
     try {
       const jsonMatch = result.match(/\{[\s\S]*\}/);
@@ -1801,16 +1927,22 @@ ${frameworkList}
 }
 只输出JSON。`;
 
-  const result = await callClaude(systemPrompt, APP_STATE.prdText.substring(0, 4000));
+  const result = await callClaude(systemPrompt, APP_STATE.prdText.substring(0, 8000));
   if (result) {
     try {
       const jsonMatch = result.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         APP_STATE.matchResult = JSON.parse(jsonMatch[0]);
+      } else {
+        console.error('Phase 2: No JSON found in response:', result.substring(0, 500));
+        APP_STATE.matchResult = { matches: [], checklistItems: [], _parseError: '未检测到 JSON，原始响应已输出到控制台' };
       }
     } catch (e) {
-      APP_STATE.matchResult = { matches: [], checklistItems: [] };
+      console.error('Phase 2: JSON parse error:', e, result.substring(0, 500));
+      APP_STATE.matchResult = { matches: [], checklistItems: [], _parseError: 'JSON 解析失败: ' + e.message };
     }
+  } else {
+    APP_STATE.matchResult = { matches: [], checklistItems: [], _parseError: 'AI 调用返回空结果' };
   }
   renderPhase2Results();
 }
@@ -1850,7 +1982,10 @@ function renderPhase2Results() {
     html += renderGroup('🟢 参考', 'var(--success)', lowMatches);
     html += '</div>';
   } else {
-    html += '<div class="card"><div class="card-header">📚 知识匹配结果</div><div style="color:var(--gray-400);font-size:14px">未检测到强匹配的知识条目，请继续下一步。</div></div>';
+    const errMsg = match._parseError
+      ? `<div style="color:var(--danger);font-size:13px;margin-top:8px">调试信息：${match._parseError}（查看浏览器控制台获取详情）</div>`
+      : '';
+    html += `<div class="card"><div class="card-header">📚 知识匹配结果</div><div style="color:var(--gray-400);font-size:14px">未检测到强匹配的知识条目，请继续下一步。</div>${errMsg}</div>`;
   }
 
   // Show unmatched norms as reference
@@ -2374,9 +2509,13 @@ function resetWorkflow() {
   });
   // Reset UI
   document.getElementById('p0-step-input').style.display = 'block';
+  document.getElementById('p0-step-loading').style.display = 'none';
+  document.getElementById('p0-step-summary').style.display = 'none';
   document.getElementById('p0-step-okr').style.display = 'none';
   document.getElementById('p0-step-3q').style.display = 'none';
   document.getElementById('p0-step-health').style.display = 'none';
+  document.getElementById('p0-ai-analysis').innerHTML = '';
+  document.getElementById('p0-3q-ai-prefill').innerHTML = '';
   document.getElementById('prd-input').value = '';
   document.getElementById('btn-export').disabled = true;
   const startBtn = document.getElementById('btn-start-p0');
@@ -2388,15 +2527,28 @@ function resetWorkflow() {
 // ============================================================
 // 初始化
 // ============================================================
-function init() {
+async function checkProxyAvailable() {
+  try {
+    const proxyBase = window._rcProxyUrl || 'http://localhost:3456/api/claude';
+    const resp = await fetch(proxyBase.replace('/api/claude', '/'), { method: 'GET', signal: AbortSignal.timeout(2000) });
+    return resp.ok;
+  } catch { return false; }
+}
+
+async function init() {
   renderProgressBar();
   showPhaseContent(0);
   updateNavStatus();
   renderOKRList();
 
-  // Check API Key on load
+  // Check AI availability on load
   if (!getApiKey()) {
-    setTimeout(() => showToast('提示：请先设置 API Key 以启用 AI 功能'), 1000);
+    const proxyOk = await checkProxyAvailable();
+    if (proxyOk) {
+      setTimeout(() => showToast('✅ 已连接本地代理，无需 API Key'), 800);
+    } else {
+      setTimeout(() => showToast('提示：请设置 API Key，或启动 node rc-server.js 后访问 localhost:3456'), 1000);
+    }
   }
 }
 
