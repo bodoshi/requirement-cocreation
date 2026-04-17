@@ -6,10 +6,13 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
 const { spawn } = require('child_process');
 
-const PORT = 3456;
-const HTML_FILE = path.join(__dirname, 'requirement-cocreation.html');
+const PORT = process.env.RC_PORT || 3456;
+const HOST = '0.0.0.0'; // Listen on all interfaces for LAN access
+const HTML_FILE = path.join(__dirname, 'public', 'index.html');
+const RC_TOKEN = process.env.RC_TOKEN || ''; // Optional token for LAN auth
 
 // 自动探测 CLI 路径
 function findCLI() {
@@ -46,13 +49,41 @@ if (!CLI_JS) {
 console.log(`  📍 CLI: ${CLI_JS}`);
 console.log(`  📍 Git Bash: ${GIT_BASH}`);
 
+function getLanIPs() {
+  const nets = os.networkInterfaces();
+  const ips = [];
+  for (const iface of Object.values(nets)) {
+    for (const cfg of iface) {
+      if (cfg.family === 'IPv4' && !cfg.internal) ips.push(cfg.address);
+    }
+  }
+  return ips;
+}
+
+function checkToken(req, res) {
+  if (!RC_TOKEN) return true;
+  const auth = req.headers['x-rc-token'] || '';
+  if (auth === RC_TOKEN) return true;
+  res.writeHead(403, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify({ error: 'Invalid token' }));
+  return false;
+}
+
 const server = http.createServer((req, res) => {
+  // CORS — allow any origin (Vercel, file://, localhost)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-RC-Token');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // GET / → 返回 HTML
+  // GET /api/ping — health check
+  if (req.method === 'GET' && req.url === '/api/ping') {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ ok: true, version: '1.0' }));
+    return;
+  }
+
+  // GET / → serve HTML (for local direct access)
   if (req.method === 'GET' && (req.url === '/' || req.url === '/index.html')) {
     try {
       const html = fs.readFileSync(HTML_FILE, 'utf-8');
@@ -64,8 +95,10 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // POST /api/claude → 通过 stdin 传入内容，避免命令行长度超限
+  // POST /api/claude — proxy to Claude CLI via stdin
   if (req.method === 'POST' && req.url === '/api/claude') {
+    if (!checkToken(req, res)) return;
+
     let body = '';
     req.on('data', c => body += c);
     req.on('end', () => {
@@ -80,8 +113,7 @@ const server = http.createServer((req, res) => {
         ];
         if (model) args.push('--model', model);
 
-        // system prompt + user message 合并通过 stdin 传入
-        // claude --print 从 stdin 读取用户消息
+        // system prompt + user message combined via stdin
         const stdinContent = systemPrompt
           ? `<system_instructions>\n${systemPrompt}\n</system_instructions>\n\n${userMessage || ''}`
           : (userMessage || '');
@@ -146,8 +178,15 @@ const server = http.createServer((req, res) => {
   res.writeHead(404); res.end('Not found');
 });
 
-server.listen(PORT, () => {
-  console.log(`\n  🚀 需求共创 本地代理已启动`);
-  console.log(`  📎 打开浏览器访问: http://localhost:${PORT}`);
-  console.log(`  💡 无需 API Key，使用你的 Claude Code 订阅\n`);
+server.listen(PORT, HOST, () => {
+  const lanIPs = getLanIPs();
+  console.log(`\n  RC Proxy started`);
+  console.log(`  Local:   http://localhost:${PORT}`);
+  if (lanIPs.length) {
+    lanIPs.forEach(ip => console.log(`  LAN:     http://${ip}:${PORT}`));
+  }
+  if (RC_TOKEN) {
+    console.log(`  Token:   enabled (set X-RC-Token header)`);
+  }
+  console.log(`  Ping:    GET /api/ping\n`);
 });
